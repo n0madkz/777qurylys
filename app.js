@@ -66,10 +66,8 @@ if(requestForm&&requestFileInput){
       showStatus(lang==='ru'?'Заявка отправлена. Мы свяжемся с вами в ближайшее время.':lang==='kz'?'Өтінім жіберілді. Жақында сізбен хабарласамыз.':'Request sent. We’ll contact you shortly.','success');
       requestForm.reset();fileList.innerHTML='';
     }catch(error){
-      const pending=JSON.parse(localStorage.getItem('kurylys_pending_requests')||'[]');
-      pending.push({name,phone,description,language:lang,documents:[...requestFileInput.files].map(file=>({name:file.name,size:file.size})),createdAt:new Date().toISOString()});
-      localStorage.setItem('kurylys_pending_requests',JSON.stringify(pending));
-      showStatus(lang==='ru'?'Заявка сохранена на этом устройстве. После подключения сервера она будет отправлена менеджеру.':lang==='kz'?'Өтінім осы құрылғыда сақталды. Сервер қосылғаннан кейін менеджерге жіберіледі.':'Request saved on this device. It will be sent to the manager once the server is connected.','success');
+      window.KurylysRequestQueue?.enqueue({name,phone,description,language:lang,documents:[...requestFileInput.files].map(file=>({name:file.name,size:file.size})),createdAt:new Date().toISOString()});
+      showStatus(lang==='ru'?'Нет соединения с сервером. Заявка ожидает автоматической отправки с этого устройства.':lang==='kz'?'Сервермен байланыс жоқ. Өтінім осы құрылғыдан автоматты жіберілуін күтуде.':'No connection to the server. The request is queued for automatic delivery from this device.','error');
     }finally{submit.disabled=false;submit.textContent=translations[lang].sendRequest.replace(/<[^>]*>/g,'')+' ↗'}
   };
 }

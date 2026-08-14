@@ -240,7 +240,7 @@
     heroSlides: cloneHeroSlides(defaultHeroSlides)
   };
   let categories = JSON.parse(localStorage.getItem("kurylys_categories") || "null") || cloneCategories(defaultCategories);
-  let requests = JSON.parse(localStorage.getItem("kurylys_pending_requests") || "[]");
+  let requests = JSON.parse(localStorage.getItem("kurylys_admin_requests_cache") || "[]");
   let editingRequestProducts = [];
   let adminProductsPage = 1;
   const adminPageSize = 30;
@@ -366,7 +366,7 @@
       const data = await response.json();
       if (Array.isArray(data.requests)) {
         requests = data.requests;
-        localStorage.setItem("kurylys_pending_requests", JSON.stringify(requests));
+        localStorage.setItem("kurylys_admin_requests_cache", JSON.stringify(requests));
       }
     } catch (error) {
       console.warn(error);
@@ -374,7 +374,7 @@
   }
 
   function saveRequestsLocal() {
-    localStorage.setItem("kurylys_pending_requests", JSON.stringify(requests));
+    localStorage.setItem("kurylys_admin_requests_cache", JSON.stringify(requests));
   }
 
   async function mutateRequest(method, payload, id) {

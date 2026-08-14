@@ -68,10 +68,8 @@ if (form) form.onsubmit = async event => {
       setStatus(error.message || "Не удалось отправить заявку.", "error");
       return;
     }
-    const saved = JSON.parse(localStorage.getItem("kurylys_pending_requests") || "[]");
-    saved.push(payload);
-    localStorage.setItem("kurylys_pending_requests", JSON.stringify(saved));
-    setStatus("Нет соединения с сервером. Заявка сохранена на этом устройстве.", "error");
+    window.KurylysRequestQueue?.enqueue(payload);
+    setStatus("Нет соединения с сервером. Заявка ожидает автоматической отправки с этого устройства.", "error");
     return;
   }
   setStatus("Заявка принята. Мы свяжемся с вами в ближайшее время.", "success");

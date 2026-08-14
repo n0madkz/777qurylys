@@ -112,10 +112,8 @@
       showStatus(dictionary.success, "success");
     } catch (error) {
       if (response) { showStatus(error.message || "Request could not be sent.", "error"); return; }
-      const pending = JSON.parse(localStorage.getItem("kurylys_pending_requests") || "[]");
-      pending.push({ name, phone, email: emailValue, clientType: type, companyName: companyName.value.trim(), bin: bin.value.trim(), legalAddress: legalAddress.value.trim(), position: position.value.trim(), description: descriptionValue, products: selectedProducts, documents: [...input.files].map(file => ({ name: file.name, size: file.size })), createdAt: new Date().toISOString() });
-      localStorage.setItem("kurylys_pending_requests", JSON.stringify(pending));
-      showStatus(dictionary.success, "success");
+      window.KurylysRequestQueue?.enqueue({ name, phone, email: emailValue, clientType: type, companyName: companyName.value.trim(), bin: bin.value.trim(), legalAddress: legalAddress.value.trim(), position: position.value.trim(), description: descriptionValue, products: selectedProducts, documents: [...input.files].map(file => ({ name: file.name, size: file.size })), createdAt: new Date().toISOString() });
+      showStatus("Нет соединения с сервером. Заявка ожидает автоматической отправки с этого устройства.", "error");
     } finally {
       submit.disabled = false;
       submit.textContent = ui().submit;

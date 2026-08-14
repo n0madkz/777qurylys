@@ -155,10 +155,8 @@
         setStatus(error.message || "Не удалось отправить заявку.", "error");
         return;
       }
-      const pending = JSON.parse(localStorage.getItem("kurylys_pending_requests") || "[]");
-      pending.push({ name: payload.get("name"), phone: payload.get("phone"), email: payload.get("email"), clientType: payload.get("clientType"), companyName: payload.get("companyName"), bin: payload.get("bin"), legalAddress: payload.get("legalAddress"), position: payload.get("position"), description: payload.get("description"), products: requestProducts, documents: Array.from(input.files).map(file => ({ name: file.name, size: file.size })), createdAt: new Date().toISOString() });
-      localStorage.setItem("kurylys_pending_requests", JSON.stringify(pending));
-      setStatus("Нет соединения с сервером. Заявка сохранена на этом устройстве и будет доступна в админ-панели браузера.", "error");
+      window.KurylysRequestQueue?.enqueue({ name: payload.get("name"), phone: payload.get("phone"), email: payload.get("email"), clientType: payload.get("clientType"), companyName: payload.get("companyName"), bin: payload.get("bin"), legalAddress: payload.get("legalAddress"), position: payload.get("position"), description: payload.get("description"), products: requestProducts, documents: Array.from(input.files).map(file => ({ name: file.name, size: file.size })), createdAt: new Date().toISOString() });
+      setStatus("Нет соединения с сервером. Заявка ожидает автоматической отправки с этого устройства.", "error");
       submit.disabled = false;
     } finally {
       submit.disabled = false;
