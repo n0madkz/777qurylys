@@ -1,0 +1,6 @@
+.brand{display:inline-flex;align-items:center;gap:12px;min-width:0}
+.brand__signature{display:flex;min-width:150px;flex-direction:column;justify-content:center;gap:5px;padding:5px 0 5px 12px;border-left:1px solid #d8ddda;color:#151a1b;white-space:nowrap;text-transform:uppercase}
+.brand__signature-title{display:flex;flex-direction:column;font-family:"Space Grotesk",Manrope,Arial,sans-serif;font-size:10px;font-weight:800;letter-spacing:.105em;line-height:1.05}
+.brand__signature-since{font-size:8px;font-weight:800;letter-spacing:.16em;line-height:1;color:#f05a00}
+@media(max-width:900px){.brand__signature{min-width:128px;padding-left:10px;gap:4px}.brand__signature-title{font-size:9px}.brand__signature-since{font-size:7px}}
+@media(max-width:600px){.brand{gap:8px}.brand__signature{min-width:72px;max-width:76px;padding-left:8px;gap:3px;white-space:normal}.brand__signature-title{font-size:7px;letter-spacing:.06em;line-height:1.08}.brand__signature-since{font-size:6px;letter-spacing:.09em;white-space:nowrap}}

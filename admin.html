@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>Админ-панель — 777</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css?v=20260811-admin-logout">
+  <link rel="stylesheet" href="admin-categories.css">
+  <link rel="stylesheet" href="admin-requests.css?v=20260811-request-accordion">
+  <link rel="stylesheet" href="primary-logo.css?v=20260811-admin-footer-logo">
+</head>
+<body class="admin-body">
+  <header class="admin-header">
+    <div class="container">
+      <a class="brand" href="index.html" aria-label="На главную">
+        <img class="admin-logo" src="assets/footer-logo.svg" alt="777">
+      </a>
+      <span>Админ-панель</span>
+      <a class="admin-header__site-link" href="index.html">Открыть сайт</a>
+      <button class="admin-logout" id="adminLogout" type="button" aria-label="Выйти из админ-панели">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5m5 5H3m10-7v-1a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v16a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3v-1"/></svg>
+        <span>Выйти</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container admin-shell">
+    <aside class="admin-sidebar" aria-label="Разделы админ-панели">
+      <b>Управление</b>
+      <button class="admin-tab active" type="button" data-tab="dashboard">Обзор</button>
+      <button class="admin-tab" type="button" data-tab="products">Товары</button>
+      <button class="admin-tab" type="button" data-tab="categories">Категории</button>
+      <button class="admin-tab" type="button" data-tab="requests">Заявки</button>
+      <button class="admin-tab" type="button" data-tab="settings">Контакты и сайт</button>
+    </aside>
+
+    <section class="admin-content">
+      <section data-panel="dashboard">
+        <div class="admin-title">
+          <div>
+            <p class="eyebrow"><span class="eyebrow__line"></span>Сегодня</p>
+            <h1>Обзор магазина</h1>
+          </div>
+          <a class="button button--primary" href="catalog.html">Посмотреть каталог</a>
+        </div>
+        <div class="stats-grid">
+          <div><span>Товары</span><b id="statProducts">0</b></div>
+          <div><span>Категории</span><b id="statCategories">0</b></div>
+          <div><span>Заявки</span><b id="statRequests">0</b></div>
+          <div><span>Файлы в заявках</span><b id="statFiles">0</b></div>
+        </div>
+        <div class="admin-note">
+          <b>Как работать с большим каталогом</b>
+          <p>Создавайте основные разделы и вложенные категории. Витрина автоматически показывает товары постранично — это быстро даже при тысячах позиций.</p>
+        </div>
+      </section>
+
+      <section data-panel="products" hidden>
+        <div class="admin-title">
+          <div>
+            <p class="eyebrow"><span class="eyebrow__line"></span>Каталог</p>
+            <h1>Товары</h1>
+          </div>
+          <div class="admin-title__actions">
+            <button class="button button--ghost" id="importProductsButton" type="button">Импорт CSV</button>
+            <input id="productImportInput" type="file" accept=".csv,text/csv" hidden>
+            <button class="button button--primary" id="newProduct" type="button">Добавить товар</button>
+          </div>
+        </div>
+        <section class="admin-import-help" aria-labelledby="productImportTitle">
+          <div><b id="productImportTitle">Импорт большого каталога</b><p>Загрузите CSV с колонками: название, бренд, категория, изображение, описание, характеристики. До 5 000 строк за импорт. Все импортированные товары будут сохранены <strong>неактивными</strong>.</p></div>
+          <button class="table-action" id="downloadImportTemplate" type="button">Скачать шаблон CSV</button>
+        </section>
+        <div id="productImportStatus" class="form-status" role="status" aria-live="polite"></div>
+        <div class="admin-table-tools">
+          <label class="admin-search-label">Поиск по товарам<input id="adminProductSearch" type="search" placeholder="Название или бренд"></label>
+        </div>
+        <div class="admin-bulk-tools" id="adminBulkTools" hidden>
+          <b id="adminSelectedProducts">Выбрано: 0</b>
+          <div><button class="table-action" type="button" data-bulk-products="activate">Включить</button><button class="table-action" type="button" data-bulk-products="deactivate">Выключить</button><button class="table-action danger" type="button" data-bulk-products="delete">Удалить выбранные</button></div>
+          <div id="productBulkStatus" class="form-status" role="status" aria-live="polite"></div>
+        </div>
+        <div class="admin-table-wrap">
+          <table>
+            <thead>
+              <tr><th class="admin-select-column"><label class="admin-select-all" title="Выбрать все товары на странице"><input id="selectProductsPage" type="checkbox" aria-label="Выбрать все товары на странице"><span>Все</span></label></th><th>Товар</th><th>Категория</th><th>Статус</th><th>Изображение</th><th>Действия</th></tr>
+            </thead>
+            <tbody id="productsTable"></tbody>
+          </table>
+        </div>
+        <nav class="admin-pagination" id="adminProductsPagination" aria-label="Страницы товаров"></nav>
+        <form class="admin-form" id="productForm" hidden>
+          <h2 id="productFormTitle">Товар</h2>
+          <input type="hidden" id="editId">
+          <label>Название<input id="productName" required autocomplete="off"></label>
+          <label>Бренд<input id="productBrand" autocomplete="off"></label>
+          <label>Категория<select id="productCategory" required></select></label>
+          <div class="admin-product-status"><b>Статус показа</b><label class="admin-status-switch"><input id="productActive" type="checkbox" checked><span class="admin-status-switch__track" aria-hidden="true"></span><span class="admin-status-switch__label">Активен в каталоге</span></label><small>Неактивный товар сохраняется в админке, но не показывается покупателям.</small></div>
+          <label>URL изображения<input id="productImage" type="url" inputmode="url" placeholder="https://..."><span class="form-help">Рекомендуемый размер фото: 1200 × 900 px (соотношение 4:3). Минимум — 800 × 600 px. Лучше использовать JPG или WebP с товаром на светлом фоне.</span></label>
+          <label>Описание<textarea id="productDescription" rows="4" placeholder="Кратко опишите товар, его назначение и преимущества"></textarea></label>
+          <label>Характеристики<textarea id="productSpecs" rows="5" placeholder="Размер: 390×190×188 мм&#10;Материал: керамзитобетон&#10;Назначение: для стен"></textarea><span class="form-help">Одна характеристика в строке: название: значение.</span></label>
+          <div class="admin-form__actions">
+            <button class="button button--primary" type="submit">Сохранить товар</button>
+            <button class="button button--ghost" id="cancelProduct" type="button">Отмена</button>
+          </div>
+          <div id="productStatus" class="form-status" role="status"></div>
+        </form>
+      </section>
+
+      <section data-panel="categories" hidden>
+        <div class="admin-title">
+          <div>
+            <p class="eyebrow"><span class="eyebrow__line"></span>Структура каталога</p>
+            <h1>Категории</h1>
+          </div>
+          <button class="button button--primary" id="newCategory" type="button">Создать категорию</button>
+        </div>
+        <p class="admin-intro">Вложенная категория отображается внутри выбранного раздела. Например: «Стройматериалы → Сухие смеси».</p>
+        <div class="categories-admin-list" id="categoriesList"></div>
+        <form class="admin-form" id="categoryForm" hidden>
+          <h2 id="categoryFormTitle">Новая категория</h2>
+          <input type="hidden" id="categoryEditId">
+          <label>Название<input id="categoryName" required autocomplete="off" placeholder="Например, Сухие смеси"></label>
+          <label>Раздел<select id="categoryParent"></select><span class="form-help">Выберите «Верхний уровень», чтобы создать основной раздел.</span></label>
+          <label>Идентификатор<input id="categoryId" required pattern="[a-z0-9-]+" autocomplete="off" readonly placeholder="Сгенерируется из названия" aria-describedby="categoryIdHelp"><span class="form-help" id="categoryIdHelp">Автоматически создаётся латиницей из названия категории и не меняется после сохранения.</span></label>
+          <div class="admin-form__actions">
+            <button class="button button--primary" type="submit">Сохранить категорию</button>
+            <button class="button button--ghost" id="cancelCategory" type="button">Отмена</button>
+          </div>
+          <div id="categoryStatus" class="form-status" role="status"></div>
+        </form>
+      </section>
+
+      <section data-panel="requests" hidden>
+        <div class="admin-title">
+          <div>
+            <p class="eyebrow"><span class="eyebrow__line"></span>Обратная связь</p>
+            <h1>Заявки клиентов</h1>
+          </div>
+        </div>
+        <div id="requestsStatus" class="form-status" role="status" aria-live="polite"></div>
+        <div id="requestsList" class="requests-list"></div>
+        <form class="admin-form admin-request-form" id="requestForm" hidden>
+          <h2>Изменить заявку</h2>
+          <input id="requestEditId" type="hidden">
+          <label>Имя<input id="requestName" required autocomplete="name" maxlength="160"></label>
+          <label>Телефон<input id="requestPhone" type="tel" required autocomplete="tel" maxlength="80"></label>
+          <label>Почта <span class="field-optional">необязательно</span><input id="requestEmail" type="email" autocomplete="email" maxlength="160"></label>
+          <label>Тип клиента<select id="requestClientType"><option value="individual">Физическое лицо</option><option value="legal">Юридическое лицо</option></select></label>
+          <div id="requestLegalFields" class="legal-fields" hidden>
+            <p class="legal-fields__title">Реквизиты организации</p>
+            <label>Название компании<input id="requestCompanyName" autocomplete="organization" maxlength="200"></label>
+            <div class="admin-form-grid">
+              <label>БИН<input id="requestBin" inputmode="numeric" pattern="[0-9]{12}" maxlength="12"></label>
+              <label>Должность <span class="field-optional">необязательно</span><input id="requestPosition" autocomplete="organization-title" maxlength="160"></label>
+            </div>
+            <label>Юридический адрес<textarea id="requestLegalAddress" rows="3" autocomplete="street-address" maxlength="400"></textarea></label>
+          </div>
+          <label>Описание<textarea id="requestDescription" rows="5" maxlength="3000" placeholder="Комментарий или запрос клиента"></textarea></label>
+          <section class="request-editor-products" aria-labelledby="requestProductsEditorTitle">
+            <div class="request-editor-products__heading">
+              <div>
+                <b id="requestProductsEditorTitle">Товары в заявке</b>
+                <p>Изменяйте количество позиций — названия товаров останутся в заявке.</p>
+              </div>
+              <span id="requestProductsEditorCount" aria-live="polite"></span>
+            </div>
+            <div id="requestProductsEditorList" class="request-editor-products__list"></div>
+          </section>
+          <div class="admin-form__actions">
+            <button class="button button--primary" id="saveRequest" type="submit">Сохранить изменения</button>
+            <button class="button button--ghost" id="cancelRequest" type="button">Отмена</button>
+          </div>
+          <div id="requestFormStatus" class="form-status" role="status" aria-live="polite"></div>
+        </form>
+      </section>
+
+      <section data-panel="settings" hidden>
+        <div class="admin-title">
+          <div>
+            <p class="eyebrow"><span class="eyebrow__line"></span>Настройки</p>
+            <h1>Контакты сайта</h1>
+          </div>
+        </div>
+        <form class="admin-form" id="settingsForm">
+          <label>Телефон<input id="settingPhone"></label>
+          <label>Email<input id="settingEmail" type="email"></label>
+          <label>Адрес<input id="settingAddress"></label>
+          <button class="button button--primary" type="submit">Сохранить настройки</button>
+          <div id="settingsStatus" class="form-status" role="status"></div>
+        </form>
+        <section class="hero-slides-admin" aria-labelledby="heroSlidesTitle">
+          <div class="hero-slides-admin__heading">
+            <div>
+              <p class="eyebrow"><span class="eyebrow__line"></span>Главный экран</p>
+              <h2 id="heroSlidesTitle">Фоны баннера</h2>
+            </div>
+            <span class="hero-slides-admin__counter" id="heroSlidesCount">0 / 5</span>
+          </div>
+          <p class="hero-slides-admin__intro">Фоны автоматически сменяются на главной странице в указанной очереди. Первый фон показывается первым.</p>
+          <div class="hero-size-hint"><b>Пропорции 16:9 · рекомендуемый размер: 1920 × 1080 px</b><span>Минимум 1600 × 900 px · JPG, PNG или WebP · до 15 МБ до обработки. Изображение будет приведено к формату 16:9.</span></div>
+          <p class="hero-slides-admin__queue-label">Очередь показа — меняйте порядок стрелками у каждого фона.</p>
+          <div class="hero-slides-admin__list" id="heroSlidesList"></div>
+          <label class="hero-upload" for="heroSlideInput">
+            <input id="heroSlideInput" type="file" accept="image/jpeg,image/png,image/webp">
+            <span class="hero-upload__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0-4 4m4-4 4 4M5 14v5h14v-5"/></svg></span>
+            <span><b>Добавить фон</b><small>Выберите изображение с компьютера</small></span>
+          </label>
+          <div id="heroSlidesStatus" class="form-status" role="status" aria-live="polite"></div>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <script src="admin.js?v=20260811-admin-logout"></script>
+</body>
+</html>

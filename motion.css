@@ -1,0 +1,15 @@
+@media (prefers-reduced-motion:no-preference){
+  .motion-reveal{opacity:0;transform:translate3d(0,18px,0);transition:opacity .38s cubic-bezier(.22,.61,.36,1),transform .38s cubic-bezier(.22,.61,.36,1);transition-delay:var(--motion-delay,0ms);will-change:opacity,transform}
+  .motion-reveal.motion-reveal--soft{transform:translate3d(0,12px,0) scale(.985)}
+  .motion-reveal.is-visible{opacity:1;transform:translate3d(0,0,0) scale(1);will-change:auto}
+  .product-card.motion-reveal.is-visible,.category-card.motion-reveal.is-visible,.contact-card.motion-reveal.is-visible,.service-grid article.motion-reveal.is-visible,.story-grid article.motion-reveal.is-visible{transition:opacity .38s cubic-bezier(.22,.61,.36,1),transform .38s cubic-bezier(.22,.61,.36,1),box-shadow .2s ease,border-color .2s ease}
+  @media (hover:hover){
+    .product-card.motion-reveal.is-visible:hover,.category-card.motion-reveal.is-visible:hover,.contact-card.motion-reveal.is-visible:hover{transform:translate3d(0,-4px,0)}
+    .service-grid article.motion-reveal.is-visible:hover,.story-grid article.motion-reveal.is-visible:hover{transform:translate3d(0,-3px,0)}
+  }
+  .button,.quote-button,.catalog-button,.filter-button,.contact-card,.product-card__add{touch-action:manipulation}
+  .button:active,.quote-button:active,.catalog-button:active,.filter-button:active{transform:scale(.98)}
+}
+@media (prefers-reduced-motion:reduce){
+  .motion-reveal,.motion-reveal.motion-reveal--soft{opacity:1!important;transform:none!important;transition:none!important;animation:none!important}
+}

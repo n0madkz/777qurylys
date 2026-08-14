@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Корзина строительного гипермаркета 777">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://kurylys-hypermarket.pages.dev/cart.html">
+  <title>Корзина — 777</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20260811-quantity">
+  <link rel="stylesheet" href="cart-page.css?v=20260811-client">
+  <link rel="stylesheet" href="primary-logo.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header__top">
+      <a class="brand" href="index.html" aria-label="777 — на главную"><img src="assets/main-logo.svg" alt="777"></a>
+      <div class="header__contacts"><span class="muted">Ежедневно 08:00–20:00</span><a href="tel:+77758244380">+7 775 824 43 80</a></div>
+      <a class="quote-button has-inline-icon" href="cart.html" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14l-1 12H6L5 6Z"></path><path d="M9 10h6M9 14h4"></path><path d="M8 6a4 4 0 0 1 8 0"></path></svg>
+        <span>Корзина</span><b class="quote-count" data-cart-count>0</b>
+      </a>
+    </div>
+    <div class="container header__nav-row">
+      <a class="catalog-button has-inline-icon" href="catalog.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"></rect><rect x="14" y="4" width="6" height="6" rx="1"></rect><rect x="4" y="14" width="6" height="6" rx="1"></rect><rect x="14" y="14" width="6" height="6" rx="1"></rect></svg><span>Каталог</span></a>
+      <nav class="main-nav" aria-label="Главная навигация"><a href="catalog.html">Товары</a><a href="services.html">Сервисы</a><a href="about.html">О компании</a><a href="index.html#contacts">Контакты</a></nav>
+      <form class="search" action="catalog.html" method="get" role="search"><span class="ui-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"></circle><path d="m15 15 4 4"></path></svg></span><input name="search" type="search" placeholder="Поиск товаров и материалов" aria-label="Поиск товаров и материалов"></form>
+    </div>
+  </header>
+
+  <main class="container cart-page">
+    <div class="cart-page__heading">
+      <p class="eyebrow"><span class="eyebrow__line"></span>Ваш список</p>
+      <h1>Корзина</h1>
+      <p>Проверьте выбранные товары и оставьте контакты. Менеджер уточнит наличие, расчёт и доставку.</p>
+    </div>
+    <div class="cart-layout">
+      <section class="cart-list-card" aria-labelledby="cartItemsTitle">
+        <div class="cart-list-card__head"><h2 id="cartItemsTitle">Выбранные товары</h2><span id="cartItemsCount" aria-live="polite"></span></div>
+        <div id="cartItems" class="cart-items" aria-live="polite"><div class="cart-loading">Загружаем корзину…</div></div>
+        <a href="catalog.html" class="cart-back">Вернуться в каталог</a>
+      </section>
+
+      <section class="cart-form-card" aria-labelledby="cartFormTitle">
+        <p class="eyebrow"><span class="eyebrow__line"></span>Заявка</p>
+        <h2 id="cartFormTitle">Контакты для расчёта</h2>
+        <form id="cartRequestForm" novalidate>
+          <fieldset class="client-type">
+            <legend>Кто оформляет заявку?</legend>
+            <div class="client-type__buttons" role="group" aria-label="Тип клиента">
+              <button class="client-type__button is-active" type="button" data-cart-client-type="individual" aria-pressed="true">Физическое лицо</button>
+              <button class="client-type__button" type="button" data-cart-client-type="legal" aria-pressed="false">Юридическое лицо</button>
+            </div>
+            <input id="cartClientType" name="clientType" type="hidden" value="individual">
+          </fieldset>
+          <label for="cartName">Имя<input id="cartName" name="name" required autocomplete="name" placeholder="Имя"></label>
+          <label for="cartPhone">Телефон<input id="cartPhone" name="phone" required type="tel" autocomplete="tel" placeholder="+7 775 824 43 80"></label>
+          <label for="cartEmail">Почта <span class="field-optional">необязательно</span><input id="cartEmail" name="email" type="email" autocomplete="email" placeholder="name@company.kz"></label>
+          <div class="legal-fields" id="cartLegalFields" hidden>
+            <p class="legal-fields__title">Реквизиты организации</p>
+            <label for="cartCompanyName">Название компании<input id="cartCompanyName" name="companyName" autocomplete="organization" placeholder="ТОО «Компания»"></label>
+            <div class="cart-form-grid">
+              <label for="cartBin">БИН<input id="cartBin" name="bin" inputmode="numeric" pattern="[0-9]{12}" maxlength="12" placeholder="12 цифр"></label>
+              <label for="cartPosition">Должность <span class="field-optional">необязательно</span><input id="cartPosition" name="position" autocomplete="organization-title" placeholder="Менеджер"></label>
+            </div>
+            <label for="cartLegalAddress">Юридический адрес<textarea id="cartLegalAddress" name="legalAddress" rows="3" autocomplete="street-address" placeholder="Город, улица, дом"></textarea></label>
+          </div>
+          <label for="cartDescription">Описание задачи<textarea id="cartDescription" name="description" rows="4" placeholder="Например: нужен расчёт для ремонта квартиры"></textarea></label>
+          <label class="file-drop cart-file-drop" for="cartFiles"><input id="cartFiles" type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.doc,.docx"><span class="file-drop__icon" aria-hidden="true"></span><b>Прикрепить документы</b><small>PDF, JPG, PNG, XLSX, DOCX — до 10 МБ на файл</small></label>
+          <div id="cartFileList" class="selected-files" aria-live="polite"></div>
+          <button id="cartSubmit" class="button button--primary button--full has-inline-icon" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"></path></svg><span>Отправить заявку</span></button>
+          <p class="cart-privacy">Нажимая кнопку, вы соглашаетесь на обработку данных.</p>
+          <div id="cartStatus" class="form-status" role="status" aria-live="polite"></div>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer"><div class="container footer__bottom"><span>© 2026 777 Строительный гипермаркет</span><span>г. Атырау, ул. Гинаят Абдрахманов, 85в</span></div></footer>
+  <script src="cart-store.js?v=20260810-5"></script>
+  <script src="cart.js?v=20260811-request-without-items"></script>
+  <script src="footer.js?v=20260811-brand-signature"></script>
+</body>
+</html>

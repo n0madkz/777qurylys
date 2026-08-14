@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /admin-login.html
+Disallow: /cart.html
+Disallow: /request.html
+
+Sitemap: https://kurylys-hypermarket.pages.dev/sitemap.xml

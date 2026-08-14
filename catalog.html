@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Каталог строительных материалов и инструментов гипермаркета 777 в Атырау. Подберите позиции и отправьте заявку на расчёт." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://kurylys-hypermarket.pages.dev/catalog.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="ru_KZ" />
+  <meta property="og:site_name" content="777 — строительный гипермаркет" />
+  <meta property="og:title" content="Каталог товаров — 777" />
+  <meta property="og:description" content="Строительные материалы и инструменты для вашего проекта." />
+  <meta property="og:url" content="https://kurylys-hypermarket.pages.dev/catalog.html" />
+  <meta property="og:image" content="https://kurylys-hypermarket.pages.dev/assets/building-materials-hero.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <title>Каталог стройматериалов и инструментов — 777</title>
+  <link rel="stylesheet" href="styles.css?v=20260811-product-image">
+  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="catalog-pagination.css">
+  <link rel="stylesheet" href="primary-logo.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header__top">
+      <a class="brand" href="index.html" aria-label="777 — на главную">
+        <img src="assets/main-logo.svg" alt="777">
+      </a>
+      <div class="header__contacts">
+        <span class="muted">Ежедневно 08:00–20:00</span>
+        <a href="tel:+77758244380">+7 775 824 43 80</a>
+      </div>
+      <a class="quote-button has-inline-icon" href="cart.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14l-1 12H6L5 6Z"></path><path d="M8 6a4 4 0 0 1 8 0"></path></svg><span>Корзина</span><b class="quote-count" data-cart-count>0</b></a>
+    </div>
+    <div class="container header__nav-row">
+      <a class="catalog-button" href="catalog.html" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h5v5H4zM15 5h5v5h-5zM4 15h5v5H4zM15 15h5v5h-5z"></path></svg>
+        <span>Каталог</span>
+      </a>
+      <nav class="main-nav" aria-label="Главная навигация">
+        <a href="catalog.html">Товары</a>
+        <a href="services.html">Сервисы</a>
+        <a href="about.html">О компании</a>
+        <a href="index.html#contacts">Контакты</a>
+      </nav>
+      <label class="search" for="catalogSearch">
+        <svg class="search__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="5.5"></circle><path d="m16 16 4 4"></path></svg>
+        <input id="catalogSearch" type="search" autocomplete="off" placeholder="Поиск товаров и материалов">
+      </label>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero container">
+      <p class="eyebrow"><span class="eyebrow__line"></span>Каталог товаров</p>
+      <h1>Материалы для<br><em>надёжных проектов.</em></h1>
+      <p>Выбирайте категории, открывайте карточки товаров и добавляйте нужные позиции в заявку.</p>
+    </section>
+
+    <section class="container catalog-layout">
+      <aside class="catalog-filters" aria-label="Фильтры каталога">
+        <b>Категории</b>
+        <div class="catalog-filter-list" id="catalogFilters"></div>
+        <div class="filter-help">
+          <b>Нужен расчёт?</b>
+          <p>Пришлите список материалов — специалист поможет собрать заявку.</p>
+          <a class="button button--primary" href="cart.html">Перейти в корзину</a>
+        </div>
+      </aside>
+
+      <section class="catalog-results" aria-labelledby="catalogHeading">
+        <div class="catalog-results__top">
+          <div>
+            <span id="catalogHeading" class="catalog-results__label">Товары</span>
+            <span id="resultCount" aria-live="polite">Загрузка каталога…</span>
+          </div>
+          <label class="catalog-sort-label">Сортировка
+            <select id="sortProducts">
+              <option value="default">Сначала популярные</option>
+              <option value="name">По названию</option>
+            </select>
+          </label>
+        </div>
+        <div class="product-grid" id="catalogGrid" aria-live="polite"></div>
+        <nav class="catalog-pagination" id="catalogPagination" aria-label="Страницы каталога"></nav>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__bottom">
+      <span>© 2026 777 Строительный гипермаркет</span>
+      <a href="admin.html">Вход для администратора</a>
+    </div>
+  </footer>
+
+  <script src="cart-store.js?v=20260810-5"></script>
+  <script src="catalog.js?v=20260811-products-active"></script>
+  <script src="footer.js?v=20260811-brand-signature"></script>
+</body>
+</html>

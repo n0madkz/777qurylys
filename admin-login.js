@@ -1,0 +1,2 @@
+document.getElementById('loginForm').onsubmit=async e=>{e.preventDefault();const error=document.getElementById('loginError');error.style.display='none';const r=await fetch('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:document.getElementById('loginUser').value,password:document.getElementById('loginPassword').value})});if(r.ok)location.href='/admin.html';else error.style.display='block'};
+const iconScript=document.createElement('script');iconScript.src='icons.js';document.body.appendChild(iconScript);

@@ -1,0 +1,7 @@
+name = "kurylys-hypermarket"
+compatibility_date = "2026-08-01"
+pages_build_output_dir = "."
+
+[[kv_namespaces]]
+binding = "KURYLYS_DATA"
+id = "272eaa085707424680a8ff4db58deb9d"

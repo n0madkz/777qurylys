@@ -1,0 +1,15 @@
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+
+# Cloudflare local state
+.wrangler/
+
+# Supabase CLI local state
+supabase/.temp/
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+.vscode/

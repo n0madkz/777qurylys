@@ -1,0 +1,7 @@
+/* Primary brand mark: preserve the supplied SVG colours and proportions. */
+.brand img[src$="main-logo.svg"]{content:normal!important;width:136px;height:70px;object-fit:contain;mix-blend-mode:normal}
+.admin-header .brand img[src$="main-logo.svg"]{width:136px;height:70px}
+.admin-header .brand .admin-logo{content:url("assets/footer-logo.svg")!important;width:136px;height:70px;object-fit:contain;filter:none!important;mix-blend-mode:normal!important;background:transparent!important;padding:0!important}
+.admin-login>img[src$="main-logo.svg"]{width:190px;height:100px;object-fit:contain}
+.footer__logo[src$="footer-logo.svg"]{content:normal!important;width:150px;height:auto;filter:none!important;mix-blend-mode:normal}
+@media(max-width:600px){.brand img[src$="main-logo.svg"]{width:106px;height:55px}}
