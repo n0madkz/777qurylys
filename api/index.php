@@ -65,6 +65,9 @@ function product_client(array $row): array {
         'badge' => (string)($row['badge'] ?? ''),
         'active' => bool_value($row['is_active'] ?? false)
     ]);
+    $category = $row['categories'] ?? null;
+    $categoryName = is_array($category) ? text_value($category['name'] ?? ($category[0]['name'] ?? ''), 160) : '';
+    if ($categoryName !== '') $product['categoryName'] = $categoryName;
     if (json_value($row['translations'] ?? [])) $product['translations'] = json_value($row['translations']);
     return $product;
 }
@@ -77,10 +80,19 @@ function get_categories(bool $publicOnly = false): array {
 }
 
 function get_products(bool $publicOnly = false): array {
-    $query = '?select=*&order=sort_order.asc,created_at.desc';
+  $query = '?select=*&order=sort_order.asc,created_at.desc';
+  if ($publicOnly) $query .= '&is_active=eq.true';
+  $rows = supabase_json('GET', rest_path('products', $query));
+  return array_map('product_client', is_array($rows) ? $rows : []);
+}
+
+function get_product_by_id(string $id, bool $publicOnly = true): ?array {
+    $id = text_value($id, 120);
+    if ($id === '') return null;
+    $query = '?select=*,categories(name)&id=eq.' . rawurlencode($id) . '&limit=1';
     if ($publicOnly) $query .= '&is_active=eq.true';
     $rows = supabase_json('GET', rest_path('products', $query));
-    return array_map('product_client', is_array($rows) ? $rows : []);
+    return is_array($rows) && isset($rows[0]) && is_array($rows[0]) ? product_client($rows[0]) : null;
 }
 
 function get_settings(): array {
@@ -295,6 +307,9 @@ try {
     $route = trim((string)($_GET['route'] ?? ''), '/');
     $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
     if ($route === 'catalog') { require_method('GET'); send_json(['products' => get_products(true), 'settings' => get_settings(), 'categories' => get_categories(true)]); }
+    if ($route === 'products') { require_method('GET'); send_json(['products' => get_products(true)]); }
+    if ($route === 'categories') { require_method('GET'); send_json(['categories' => get_categories(true)]); }
+    if ($route === 'product') { require_method('GET'); send_json(['product' => get_product_by_id((string)($_GET['id'] ?? ''), true)]); }
     if ($route === 'hero-slides') { require_method('GET'); send_json(['slides' => get_slides(true)]); }
     if ($route === 'requests') send_json(save_request(), 201);
     if ($route === 'media') serve_storage((string)($_GET['bucket'] ?? ''), (string)($_GET['path'] ?? ''));

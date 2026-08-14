@@ -139,20 +139,15 @@
     draw(null);
     return;
   }
-  fetch("/api/catalog", { cache: "no-store" })
+  fetch("/api/product?id=" + encodeURIComponent(id), { cache: "no-store" })
     .then(response => {
       if (!response.ok) throw new Error("Product catalogue is unavailable");
       return response.json();
     })
     .then(data => {
-      if (!Array.isArray(data && data.products)) throw new Error("Invalid catalogue response");
-      if (Array.isArray(data.categories)) {
-        categoryNames = data.categories.reduce((result, category) => {
-          result[category.id] = category.name;
-          return result;
-        }, categoryNames);
-      }
-      draw(data.products.filter(isProductActive).find(product => String(product.id) === String(id)));
+      if (!data || !("product" in data)) throw new Error("Invalid product response");
+      if (data.product && data.product.categoryName) categoryNames[data.product.cat] = data.product.categoryName;
+      draw(data.product && isProductActive(data.product) ? data.product : null);
     })
     .catch(() => {
       mount.innerHTML = '<section class="product-not-found"><p class="eyebrow"><span class="eyebrow__line"></span>Каталог</p><h1>Каталог временно недоступен</h1><p>Обновите страницу или попробуйте немного позже.</p><a class="button button--primary" href="catalog.html">Вернуться в каталог</a></section>';

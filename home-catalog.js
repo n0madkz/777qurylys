@@ -11,6 +11,7 @@
   };
   const labels = { ru: "позиций", kz: "позиция", en: "items" };
   let catalogCategories = [];
+  let catalogState = "loading";
   const escapeHtml = value => String(value == null ? "" : value).replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
   const nameFor = (product, locale) => {
     if (typeof product.name === "string" && product.name.trim()) return product.name;
@@ -49,9 +50,13 @@
   function updateCounts() {
     const locale = typeof lang === "string" ? lang : "ru";
     document.querySelectorAll(".category-card[data-category]").forEach(card => {
+      const countLabel = card.querySelector("small");
+      if (catalogState === "loading") {
+        if (countLabel) countLabel.textContent = "…";
+        return;
+      }
       const category = card.dataset.category;
       const count = products.filter(product => isProductActive(product) && categoryMatches(product, category)).length;
-      const countLabel = card.querySelector("small");
       if (countLabel) countLabel.textContent = count + " " + (labels[locale] || labels.ru);
     });
   }
@@ -76,6 +81,16 @@
     const grid = document.getElementById("productGrid");
     const search = document.getElementById("searchInput");
     if (!grid || !Array.isArray(products)) return;
+    if (catalogState === "loading") {
+      grid.innerHTML = '<div class="catalog-loading" role="status" aria-live="polite"><span class="catalog-loading__spinner" aria-hidden="true"></span><b>Загружаем актуальные товары</b><p>Пожалуйста, подождите.</p></div>';
+      updateCounts();
+      return;
+    }
+    if (catalogState === "error") {
+      grid.innerHTML = '<div class="catalog-loading catalog-loading--error" role="alert"><b>Не удалось загрузить каталог</b><p>Обновите страницу или попробуйте немного позже.</p></div>';
+      updateCounts();
+      return;
+    }
     const locale = typeof lang === "string" ? lang : "ru";
     const query = (search && search.value ? search.value : "").trim().toLowerCase();
     const matched = products.filter(product => isProductActive(product) && categoryMatches(product, activeFilter) && (nameFor(product, locale) + " " + brandFor(product)).toLowerCase().includes(query));
@@ -107,6 +122,10 @@
     }
 
     const locale = typeof lang === "string" ? lang : "ru";
+    if (catalogState !== "ready") {
+      box.classList.remove("is-open");
+      return;
+    }
     const query = search.value.trim().toLowerCase();
     if (!query) {
       box.classList.remove("is-open");
@@ -132,13 +151,23 @@
     homeSearch.addEventListener("input", renderSearchSuggestions);
   }
   renderHomeProducts();
-  fetch("/api/catalog", { cache: "no-store" })
-    .then(response => response.ok ? response.json() : null)
-    .then(data => {
-      if (!Array.isArray(data && data.products)) return;
-      products.splice(0, products.length, ...data.products.filter(isProductActive));
-      if (Array.isArray(data.categories)) catalogCategories = data.categories;
+  Promise.all([
+    fetch("/api/products", { cache: "no-store" }),
+    fetch("/api/categories", { cache: "no-store" })
+  ])
+    .then(async responses => {
+      if (!responses.every(response => response.ok)) throw new Error("Catalogue is unavailable");
+      return Promise.all(responses.map(response => response.json()));
+    })
+    .then(([productsData, categoriesData]) => {
+      if (!Array.isArray(productsData && productsData.products) || !Array.isArray(categoriesData && categoriesData.categories)) throw new Error("Invalid catalogue response");
+      products.splice(0, products.length, ...productsData.products.filter(isProductActive));
+      catalogCategories = categoriesData.categories;
+      catalogState = "ready";
       renderHomeProducts();
     })
-    .catch(() => updateCounts());
+    .catch(() => {
+      catalogState = "error";
+      renderHomeProducts();
+    });
 })();
