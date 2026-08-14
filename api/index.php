@@ -7,7 +7,7 @@ function category_row(array $value): array {
         'id' => strtolower(text_value($value['id'] ?? '', 100)),
         'parent_id' => strtolower(text_value($value['parent'] ?? $value['parent_id'] ?? '', 100)) ?: null,
         'name' => text_value($value['name'] ?? '', 160),
-        'translations' => json_value($value['translations'] ?? []),
+        'translations' => json_object_value($value['translations'] ?? []),
         'icon' => text_value($value['icon'] ?? '', 120) ?: null,
         'sort_order' => (int)($value['sort_order'] ?? 0),
         'is_active' => bool_value($value['active'] ?? $value['is_active'] ?? true, true)
@@ -42,7 +42,7 @@ function product_row(array $value): array {
         'id' => $id,
         'category_id' => text_value($value['cat'] ?? $value['category'] ?? $value['category_id'] ?? '', 100) ?: null,
         'name' => text_value($name, 300),
-        'translations' => json_value($value['translations'] ?? []),
+        'translations' => json_object_value($value['translations'] ?? []),
         'brand' => text_value($value['brand'] ?? $value['manufacturer'] ?? '', 160),
         'sku' => text_value($value['sku'] ?? '', 120) ?: null,
         'description' => text_value($value['description'] ?? '', 6000),
@@ -159,7 +159,7 @@ function store_catalog(array $body): array {
             'width' => max(1, min(3840, (int)($slide['width'] ?? 1920))),
             'height' => max(1, min(2160, (int)($slide['height'] ?? 1080))),
             'label' => text_value($slide['label'] ?? 'Фон баннера', 100),
-            'translations' => json_value($slide['translations'] ?? []),
+            'translations' => json_object_value($slide['translations'] ?? []),
             'sort_order' => $index,
             'is_active' => true
         ];
@@ -236,7 +236,7 @@ function store_hero_slides(array $slides): void {
             'width' => max(1, min(3840, (int)($slide['width'] ?? 1920))),
             'height' => max(1, min(2160, (int)($slide['height'] ?? 1080))),
             'label' => text_value($slide['label'] ?? 'Фон баннера', 100),
-            'translations' => json_value($slide['translations'] ?? []),
+            'translations' => json_object_value($slide['translations'] ?? []),
             'sort_order' => $index,
             'is_active' => true
         ];

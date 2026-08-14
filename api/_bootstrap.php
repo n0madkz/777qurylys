@@ -69,6 +69,11 @@ function json_value(mixed $value, array $fallback = []): array {
     return is_array($value) ? $value : $fallback;
 }
 
+/** Supabase stores translations as a JSON object; an empty PHP array would otherwise become [] instead of {}. */
+function json_object_value(mixed $value): object {
+    return (object)(is_array($value) ? $value : []);
+}
+
 function supabase_url(): string {
     $url = rtrim(config_value('SUPABASE_URL'), '/');
     if ($url === '') throw new ApiError('Supabase не настроен на сервере', 503);
