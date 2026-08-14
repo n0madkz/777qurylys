@@ -716,6 +716,46 @@
     return Number.isNaN(date.getTime()) ? "Дата не указана" : date.toLocaleString("ru-RU");
   }
 
+  function requestPrintId(request) {
+    const value = String(request && request.id || "").replace(/[^a-z0-9]/ig, "").slice(0, 8).toUpperCase();
+    return value || "—";
+  }
+
+  function printRequestAsPdf(request) {
+    if (!request) return;
+    const popup = window.open("", "_blank", "width=960,height=760");
+    if (!popup) {
+      window.alert("Браузер заблокировал окно печати. Разрешите всплывающие окна и попробуйте снова.");
+      return;
+    }
+
+    const products = Array.isArray(request.products) ? request.products : [];
+    const documents = Array.isArray(request.documents) ? request.documents : [];
+    const totalQuantity = products.reduce((total, product) => total + Math.max(1, Number(product && product.quantity) || 1), 0);
+    const requestId = requestPrintId(request);
+    const clientType = request.clientType === "legal" ? "Юридическое лицо" : "Физическое лицо";
+    const rows = products.length
+      ? products.map((product, index) => '<tr><td>' + (index + 1) + '</td><td><b>' + escapeHtml(productName(product)) + '</b>' + (product?.brand ? '<small>' + escapeHtml(product.brand) + '</small>' : '') + '</td><td>' + Math.max(1, Number(product?.quantity) || 1) + '</td></tr>').join("")
+      : '<tr><td colspan="3" class="empty">Товары не выбраны — заявка на подбор материалов.</td></tr>';
+    const contacts = [
+      ["Клиент", request.name || "Не указан"],
+      ["Телефон", request.phone || "Не указан"],
+      ["Почта", request.email || "Не указана"],
+      ["Тип клиента", clientType],
+      request.clientType === "legal" ? ["Компания", request.companyName || "Не указана"] : null,
+      request.clientType === "legal" ? ["БИН", request.bin || "Не указан"] : null,
+      request.clientType === "legal" ? ["Должность", request.position || "Не указана"] : null,
+      request.clientType === "legal" ? ["Адрес", request.legalAddress || "Не указан"] : null
+    ].filter(Boolean).map(item => '<div><span>' + escapeHtml(item[0]) + '</span><b>' + escapeHtml(item[1]) + '</b></div>').join("");
+    const documentList = documents.length
+      ? '<section><h2>Прикреплённые документы</h2><ul class="documents">' + documents.map(document => '<li>' + escapeHtml(document?.name || "Файл") + '<small>' + escapeHtml(formatDocumentSize(document?.size)) + '</small></li>').join("") + '</ul></section>'
+      : "";
+
+    popup.document.open();
+    popup.document.write('<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Заявка № ' + requestId + ' — 777</title><style>@page{size:A4;margin:15mm}*{box-sizing:border-box}body{margin:0;color:#151a1b;font-family:Arial,Helvetica,sans-serif;font-size:11pt;line-height:1.45}.header{display:flex;justify-content:space-between;gap:24px;padding-bottom:18px;border-bottom:3px solid #f05a00}.brand{font-size:32pt;font-weight:900;letter-spacing:-3px;line-height:1;color:#151a1b}.brand span{color:#f05a00}.brand-note{margin-top:6px;font-size:8pt;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.meta{text-align:right;color:#65706f;font-size:9pt}.meta b{display:block;margin-bottom:4px;color:#151a1b;font-size:14pt}.title{margin:26px 0 8px;font-size:25pt;line-height:1.1}.eyebrow{margin:0;color:#f05a00;font-size:8pt;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.contacts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 22px;margin:20px 0 24px;padding:16px 18px;background:#f7f8f8;border-radius:8px}.contacts div{padding:7px 0;border-bottom:1px solid #e1e5e3}.contacts span,.documents small{display:block;color:#687172;font-size:8pt}.contacts b{display:block;font-size:10pt;overflow-wrap:anywhere}h2{margin:24px 0 10px;font-size:14pt}table{width:100%;border-collapse:collapse}th{padding:9px 10px;background:#151a1b;color:#fff;font-size:9pt;text-align:left}td{padding:10px;border-bottom:1px solid #dfe4e2;vertical-align:top}td:first-child,td:last-child{width:70px;text-align:center}td small{display:block;margin-top:2px;color:#687172;font-size:8pt}.empty{padding:16px;text-align:left!important;color:#687172}.summary{margin-top:10px;text-align:right;font-weight:800}.description{padding:14px 16px;border-left:3px solid #f05a00;background:#fff8f2;white-space:pre-wrap}.documents{margin:0;padding:0;list-style:none}.documents li{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid #dfe4e2}.footer{display:flex;justify-content:space-between;gap:24px;margin-top:42px;padding-top:12px;border-top:1px solid #dfe4e2;color:#687172;font-size:8pt}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:48px}.signatures div{padding-top:28px;border-top:1px solid #151a1b;color:#687172;font-size:9pt}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><header class="header"><div><div class="brand">777<span>.</span></div><div class="brand-note">Строительный гипермаркет · с 2011 года</div></div><div class="meta"><b>Заявка № ' + requestId + '</b><span>Создана: ' + escapeHtml(requestDate(request.createdAt)) + '</span><br><span>Распечатано: ' + escapeHtml(requestDate(new Date().toISOString())) + '</span></div></header><p class="eyebrow">Заявка клиента</p><h1 class="title">Материалы и позиции для расчёта</h1><section class="contacts">' + contacts + '</section><section><h2>Позиции</h2><table><thead><tr><th>№</th><th>Наименование</th><th>Кол-во</th></tr></thead><tbody>' + rows + '</tbody></table><div class="summary">Позиций: ' + products.length + ' · Всего единиц: ' + totalQuantity + '</div></section><section><h2>Описание задачи</h2><div class="description">' + escapeHtml(request.description || "Без описания") + '</div></section>' + documentList + '<div class="signatures"><div>Менеджер</div><div>Клиент</div></div><footer class="footer"><span>777 — строительный гипермаркет</span><span>+7 775 824 43 80 · info@777.kz</span></footer><script>window.addEventListener("load",function(){setTimeout(function(){window.focus();window.print();},150)});window.onafterprint=function(){window.close()};<\/script></body></html>');
+    popup.document.close();
+  }
+
   function drawRequests() {
     $("#requestsList").innerHTML = requests.length
       ? requests.map(request => {
@@ -729,7 +769,7 @@
         const phoneMarkup = whatsapp
           ? '<a class="request-summary__phone request-whatsapp" href="' + escapeHtml(whatsapp) + '" target="_blank" rel="noopener noreferrer" aria-label="Написать ' + name + ' в WhatsApp">' + phone + '<small>WhatsApp</small></a>'
           : '<span class="request-summary__phone">' + phone + '</span>';
-        return '<article class="request-item"><details class="request-accordion"><summary class="request-accordion__summary"><span class="request-summary__main"><b>' + name + '</b>' + phoneMarkup + '</span><span class="request-summary__meta"><small>' + requestDate(request.createdAt) + '</small><strong>' + products.length + ' поз. · ' + productQuantity + ' ед.</strong></span></summary><div class="request-accordion__content"><div class="request-summary-line"><span>' + products.length + ' позиций · ' + productQuantity + ' ед. · ' + documents.length + ' прикреплённых файлов</span></div><p class="request-description">' + escapeHtml(request.description || "Без описания") + '</p>' + requestContactsMarkup(request) + requestProductsMarkup(products) + documentsMarkup(documents) + '<div class="request-item__actions"><button class="request-action" type="button" data-edit-request="' + requestId + '">Изменить заявку</button><button class="request-action request-action--danger" type="button" data-delete-request="' + requestId + '">Удалить</button></div></div></details></article>';
+        return '<article class="request-item"><details class="request-accordion"><summary class="request-accordion__summary"><span class="request-summary__main"><b>' + name + '</b>' + phoneMarkup + '</span><span class="request-summary__meta"><small>' + requestDate(request.createdAt) + '</small><strong>' + products.length + ' поз. · ' + productQuantity + ' ед.</strong></span></summary><div class="request-accordion__content"><div class="request-summary-line"><span>' + products.length + ' позиций · ' + productQuantity + ' ед. · ' + documents.length + ' прикреплённых файлов</span></div><p class="request-description">' + escapeHtml(request.description || "Без описания") + '</p>' + requestContactsMarkup(request) + requestProductsMarkup(products) + documentsMarkup(documents) + '<div class="request-item__actions"><button class="request-action request-action--print" type="button" data-print-request="' + requestId + '" aria-label="Открыть печать заявки для сохранения в PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6zM18 12h.01"/></svg><span>Печать / PDF</span></button><button class="request-action" type="button" data-edit-request="' + requestId + '">Изменить заявку</button><button class="request-action request-action--danger" type="button" data-delete-request="' + requestId + '">Удалить</button></div></div></details></article>';
       }).join("")
       : '<div class="admin-note"><b>Заявок пока нет</b><p>Новые запросы клиентов появятся здесь.</p></div>';
     return requests;
@@ -904,8 +944,14 @@
 
   $("#requestsList").addEventListener("click", async event => {
     if (event.target.closest(".request-whatsapp")) return;
+    const print = event.target.closest("[data-print-request]");
     const edit = event.target.closest("[data-edit-request]");
     const remove = event.target.closest("[data-delete-request]");
+    if (print) {
+      const request = requests.find(item => String(item.id) === String(print.dataset.printRequest));
+      printRequestAsPdf(request);
+      return;
+    }
     if (edit) {
       const request = requests.find(item => String(item.id) === String(edit.dataset.editRequest));
       if (request) openRequestForm(request);

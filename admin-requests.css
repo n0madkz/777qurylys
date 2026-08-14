@@ -189,6 +189,30 @@ a.request-document:hover {
   background: #fff1ee;
 }
 
+.request-action--print {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-color: #efc5aa;
+  color: #9a4a1a;
+}
+
+.request-action--print:hover {
+  border-color: var(--orange);
+  background: #fff3eb;
+  color: var(--orange);
+}
+
+.request-action--print svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+}
+
 .request-action:focus-visible {
   outline: 3px solid rgba(240, 90, 0, .28);
   outline-offset: 2px;
