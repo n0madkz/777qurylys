@@ -134,13 +134,18 @@
     event.target.value = String(selectedQuantity);
   });
   const id = new URLSearchParams(location.search).get("id");
-  const local = JSON.parse(localStorage.getItem("kurylys_products") || "null");
-  const source = Array.isArray(local) && local.length ? local : fallbackProducts;
-  draw(source.filter(isProductActive).find(product => String(product.id) === String(id)));
+  const mount = document.getElementById("productDetail");
+  if (!id) {
+    draw(null);
+    return;
+  }
   fetch("/api/catalog", { cache: "no-store" })
-    .then(response => response.ok ? response.json() : null)
+    .then(response => {
+      if (!response.ok) throw new Error("Product catalogue is unavailable");
+      return response.json();
+    })
     .then(data => {
-      if (!Array.isArray(data && data.products)) return;
+      if (!Array.isArray(data && data.products)) throw new Error("Invalid catalogue response");
       if (Array.isArray(data.categories)) {
         categoryNames = data.categories.reduce((result, category) => {
           result[category.id] = category.name;
@@ -149,5 +154,7 @@
       }
       draw(data.products.filter(isProductActive).find(product => String(product.id) === String(id)));
     })
-    .catch(() => {});
+    .catch(() => {
+      mount.innerHTML = '<section class="product-not-found"><p class="eyebrow"><span class="eyebrow__line"></span>Каталог</p><h1>Каталог временно недоступен</h1><p>Обновите страницу или попробуйте немного позже.</p><a class="button button--primary" href="catalog.html">Вернуться в каталог</a></section>';
+    });
 })();
