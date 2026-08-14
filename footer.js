@@ -44,6 +44,55 @@
   logo?.style.setProperty("background", "transparent", "important");
 })();
 
+(() => {
+  const clean = value => String(value == null ? "" : value).trim();
+  const phoneHref = value => "tel:" + clean(value).replace(/[^+\d]/g, "");
+  const mapHref = value => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(clean(value));
+
+  function replaceContactText(link, selector, value) {
+    const target = link.querySelector(selector);
+    if (target) target.textContent = value;
+    else if (!link.children.length) link.textContent = value;
+  }
+
+  function applyContacts(settings) {
+    if (!settings || typeof settings !== "object") return;
+    const phone = clean(settings.phone);
+    const email = clean(settings.email);
+    const address = clean(settings.address);
+
+    if (phone) {
+      document.querySelectorAll('a[href^="tel:"]').forEach(link => {
+        link.href = phoneHref(phone);
+        replaceContactText(link, "b", phone);
+      });
+    }
+    if (email) {
+      document.querySelectorAll('a[href^="mailto:"]').forEach(link => {
+        link.href = "mailto:" + email;
+        replaceContactText(link, "b", email);
+      });
+    }
+    if (address) {
+      document.querySelectorAll(".contact-card[href*='google.com/maps']").forEach(link => {
+        link.href = mapHref(address);
+        replaceContactText(link, "b", address);
+      });
+      const footerAddress = document.querySelector(".footer .footer__grid > div:nth-child(3) span");
+      if (footerAddress) footerAddress.textContent = address;
+    }
+  }
+
+  window.KurylysSiteContacts = { apply: applyContacts };
+  fetch("/api/settings", { cache: "no-store" })
+    .then(response => response.ok ? response.json() : Promise.reject(new Error("settings")))
+    .then(data => {
+      applyContacts(data.settings);
+      document.dispatchEvent(new CustomEvent("kurylys:site-settings", { detail: data.settings || {} }));
+    })
+    .catch(() => { /* Static contact values remain as an offline fallback. */ });
+})();
+
 if (!document.querySelector('script[src^="brand-tagline.js"]')) {
   const brandTagline = document.createElement("script");
   brandTagline.src = "brand-tagline.js?v=20260811-brand-signature";

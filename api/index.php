@@ -108,6 +108,18 @@ function get_settings(): array {
     return is_array($rows) && isset($rows[0]['value']) && is_array($rows[0]['value']) ? $rows[0]['value'] : [];
 }
 
+/** Store the single editable site-settings record without relying on upsert
+ * preferences that are not enabled on every shared-hosting Supabase setup. */
+function persist_site_settings(array $settings): void {
+    $value = json_object_value($settings);
+    $existing = supabase_json('GET', rest_path('site_settings', '?key=eq.site&select=key&limit=1'));
+    if (is_array($existing) && isset($existing[0])) {
+        supabase_json('PATCH', rest_path('site_settings', '?key=eq.site'), ['value' => $value], ['Prefer: return=representation']);
+        return;
+    }
+    supabase_json('POST', rest_path('site_settings'), [['key' => 'site', 'value' => $value]], ['Prefer: return=representation']);
+}
+
 function get_slides(bool $publicOnly = true): array {
     $query = '?select=*&order=sort_order.asc,created_at.asc';
     if ($publicOnly) $query .= '&is_active=eq.true';
@@ -143,10 +155,10 @@ function store_catalog(array $body): array {
     }
     if ($products) batch_upsert('products', $products);
 
-    $settings = json_value($body['settings'] ?? []);
+    $settings = array_merge(get_settings(), json_value($body['settings'] ?? []));
     $slides = json_value($settings['heroSlides'] ?? []);
     unset($settings['heroSlides']);
-    supabase_json('POST', rest_path('site_settings', '?on_conflict=key'), [['key' => 'site', 'value' => $settings]], ['Prefer: resolution=merge-duplicates,return=representation']);
+    persist_site_settings($settings);
 
     $slideRows = [];
     foreach (array_slice($slides, 0, 5) as $index => $slide) {
@@ -258,7 +270,7 @@ function store_settings(array $body): array {
     unset($incoming['heroSlides']);
     $current = get_settings();
     $settings = array_merge($current, $incoming);
-    supabase_json('POST', rest_path('site_settings', '?on_conflict=key'), [['key' => 'site', 'value' => $settings]], ['Prefer: resolution=merge-duplicates,return=representation']);
+    persist_site_settings($settings);
     if ($hasSlides) store_hero_slides($slides);
     return ['ok' => true, 'settings' => array_merge(get_settings(), ['heroSlides' => get_slides(false)])];
 }
@@ -408,6 +420,7 @@ try {
     $route = trim((string)($_GET['route'] ?? ''), '/');
     $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
     if ($route === 'catalog') { require_method('GET'); send_json(['products' => get_products(true), 'settings' => get_settings(), 'categories' => get_categories(true)]); }
+    if ($route === 'settings') { require_method('GET'); send_json(['settings' => get_settings()]); }
     if ($route === 'products') { require_method('GET'); send_json(['products' => get_products(true)]); }
     if ($route === 'categories') { require_method('GET'); send_json(['categories' => get_categories(true)]); }
     if ($route === 'product') { require_method('GET'); send_json(['product' => get_product_by_id((string)($_GET['id'] ?? ''), true)]); }
