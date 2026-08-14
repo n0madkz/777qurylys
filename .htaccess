@@ -3,6 +3,9 @@ DirectoryIndex index.html
 
 RewriteEngine On
 
+# Keep links created before the Plesk migration working.
+RewriteRule ^(catalog|about|contacts|services|cart|product|request|admin|admin-login)/?$ /$1.html [R=302,L,NE]
+
 # Keep the existing browser API paths while running them through PHP on Plesk.
 RewriteRule ^api/(.*)$ api/index.php?route=$1 [QSA,L]
 RewriteRule ^sitemap\.xml$ api/index.php?route=sitemap [QSA,L]
