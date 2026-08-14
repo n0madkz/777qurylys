@@ -50,7 +50,7 @@
 
   function toFormData(item) {
     const data = new FormData();
-    ["name", "phone", "email", "clientType", "companyName", "bin", "legalAddress", "position", "language"].forEach(key => {
+    ["name", "phone", "email", "clientType", "companyName", "bin", "iik", "bik", "bankName", "legalAddress", "position", "language"].forEach(key => {
       if (item[key] != null) data.append(key, String(item[key]));
     });
 

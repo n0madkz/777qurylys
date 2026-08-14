@@ -155,7 +155,7 @@
         setStatus(error.message || "Не удалось отправить заявку.", "error");
         return;
       }
-      window.KurylysRequestQueue?.enqueue({ name: payload.get("name"), phone: payload.get("phone"), email: payload.get("email"), clientType: payload.get("clientType"), companyName: payload.get("companyName"), bin: payload.get("bin"), legalAddress: payload.get("legalAddress"), position: payload.get("position"), description: payload.get("description"), products: requestProducts, documents: Array.from(input.files).map(file => ({ name: file.name, size: file.size })), createdAt: new Date().toISOString() });
+      window.KurylysRequestQueue?.enqueue({ name: payload.get("name"), phone: payload.get("phone"), email: payload.get("email"), clientType: payload.get("clientType"), companyName: payload.get("companyName"), bin: payload.get("bin"), iik: payload.get("iik"), bik: payload.get("bik"), bankName: payload.get("bankName"), legalAddress: payload.get("legalAddress"), position: payload.get("position"), description: payload.get("description"), products: requestProducts, documents: Array.from(input.files).map(file => ({ name: file.name, size: file.size })), createdAt: new Date().toISOString() });
       setStatus("Нет соединения с сервером. Заявка ожидает автоматической отправки с этого устройства.", "error");
       submit.disabled = false;
     } finally {

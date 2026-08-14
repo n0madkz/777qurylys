@@ -179,6 +179,11 @@
               <label>БИН<input id="requestBin" inputmode="numeric" pattern="[0-9]{12}" maxlength="12"></label>
               <label>Должность <span class="field-optional">необязательно</span><input id="requestPosition" autocomplete="organization-title" maxlength="160"></label>
             </div>
+            <div class="admin-form-grid">
+              <label>ИИК <span class="field-optional">необязательно</span><input id="requestIik" inputmode="text" autocomplete="off" maxlength="34" placeholder="KZ00 0000 0000 0000 0000"></label>
+              <label>БИК <span class="field-optional">необязательно</span><input id="requestBik" inputmode="text" autocomplete="off" maxlength="20" placeholder="ABCDEFGH"></label>
+            </div>
+            <label>Банк <span class="field-optional">необязательно</span><input id="requestBankName" autocomplete="off" maxlength="160" placeholder="Название банка"></label>
             <label>Юридический адрес<textarea id="requestLegalAddress" rows="3" autocomplete="street-address" maxlength="400"></textarea></label>
           </div>
           <label>Описание<textarea id="requestDescription" rows="5" maxlength="3000" placeholder="Комментарий или запрос клиента"></textarea></label>
@@ -237,7 +242,7 @@
     </section>
   </main>
 
-<script src="request-queue.js?v=20260814-request-sync"></script>
-  <script src="admin.js?v=20260815-save-sections"></script>
+<script src="request-queue.js?v=20260815-bank-details"></script>
+  <script src="admin.js?v=20260815-bank-details"></script>
 </body>
 </html>

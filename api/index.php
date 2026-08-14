@@ -271,6 +271,9 @@ function save_request(): array {
     $clientType = text_value($_POST['clientType'] ?? 'individual', 20) === 'legal' ? 'legal' : 'individual';
     $company = text_value($_POST['companyName'] ?? '', 200);
     $bin = preg_replace('/\D/', '', text_value($_POST['bin'] ?? '', 20));
+    $iik = preg_replace('/\s+/', '', strtoupper(text_value($_POST['iik'] ?? '', 34)));
+    $bik = preg_replace('/\s+/', '', strtoupper(text_value($_POST['bik'] ?? '', 20)));
+    $bankName = text_value($_POST['bankName'] ?? '', 160);
     $address = text_value($_POST['legalAddress'] ?? '', 400);
     $position = text_value($_POST['position'] ?? '', 160);
     $description = text_value($_POST['description'] ?? '', 3000);
@@ -279,7 +282,7 @@ function save_request(): array {
     if ($clientType === 'legal' && ($company === '' || !preg_match('/^\d{12}$/', $bin) || $address === '')) throw new ApiError('Для юридического лица укажите компанию, БИН и юридический адрес', 400);
     $created = supabase_json('POST', rest_path('customer_requests', '?select=*'), [[
         'name' => $name, 'phone' => $phone, 'email' => $email ?: null, 'client_type' => $clientType,
-        'company_name' => $company ?: null, 'bin' => $bin ?: null, 'legal_address' => $address ?: null,
+        'company_name' => $company ?: null, 'bin' => $bin ?: null, 'iik' => $iik ?: null, 'bik' => $bik ?: null, 'bank_name' => $bankName ?: null, 'legal_address' => $address ?: null,
         'position' => $position ?: null, 'description' => $description
     ]], ['Prefer: return=representation']);
     $requestId = (string)($created[0]['id'] ?? '');
@@ -321,6 +324,7 @@ function request_client(array $row): array {
         'id' => (string)$row['id'], 'name' => (string)$row['name'], 'phone' => (string)$row['phone'],
         'email' => (string)($row['email'] ?? ''), 'clientType' => (string)($row['client_type'] ?? 'individual'),
         'companyName' => (string)($row['company_name'] ?? ''), 'bin' => (string)($row['bin'] ?? ''),
+        'iik' => (string)($row['iik'] ?? ''), 'bik' => (string)($row['bik'] ?? ''), 'bankName' => (string)($row['bank_name'] ?? ''),
         'legalAddress' => (string)($row['legal_address'] ?? ''), 'position' => (string)($row['position'] ?? ''),
         'description' => (string)($row['description'] ?? ''), 'createdAt' => (string)$row['created_at'], 'updatedAt' => (string)($row['updated_at'] ?? ''),
         'products' => array_map(fn($item) => ['id' => (string)($item['product_id'] ?? ''), 'name' => (string)$item['product_name'], 'brand' => (string)($item['brand'] ?? ''), 'category' => (string)($item['category_id'] ?? ''), 'quantity' => (int)$item['quantity']], $items),
@@ -349,11 +353,11 @@ function admin_requests(string $method): array {
     $email = text_value($body['email'] ?? '', 160);
     if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) throw new ApiError('Укажите корректный адрес электронной почты', 400);
     $type = text_value($body['clientType'] ?? 'individual', 20) === 'legal' ? 'legal' : 'individual';
-    $company = text_value($body['companyName'] ?? '', 200); $bin = preg_replace('/\D/', '', text_value($body['bin'] ?? '', 20)); $address = text_value($body['legalAddress'] ?? '', 400);
+    $company = text_value($body['companyName'] ?? '', 200); $bin = preg_replace('/\D/', '', text_value($body['bin'] ?? '', 20)); $iik = preg_replace('/\s+/', '', strtoupper(text_value($body['iik'] ?? '', 34))); $bik = preg_replace('/\s+/', '', strtoupper(text_value($body['bik'] ?? '', 20))); $bankName = text_value($body['bankName'] ?? '', 160); $address = text_value($body['legalAddress'] ?? '', 400);
     if ($type === 'legal' && ($company === '' || !preg_match('/^\d{12}$/', $bin) || $address === '')) throw new ApiError('Для юридического лица заполните компанию, БИН и адрес', 400);
     supabase_json('PATCH', rest_path('customer_requests', '?id=eq.' . rawurlencode($id)), [
         'name' => $name, 'phone' => $phone, 'email' => $email ?: null, 'client_type' => $type, 'company_name' => $company ?: null,
-        'bin' => $bin ?: null, 'legal_address' => $address ?: null, 'position' => text_value($body['position'] ?? '', 160) ?: null,
+        'bin' => $bin ?: null, 'iik' => $iik ?: null, 'bik' => $bik ?: null, 'bank_name' => $bankName ?: null, 'legal_address' => $address ?: null, 'position' => text_value($body['position'] ?? '', 160) ?: null,
         'description' => text_value($body['description'] ?? '', 3000)
     ], ['Prefer: return=representation']);
     if (array_key_exists('products', $body)) {

@@ -647,6 +647,9 @@
     $("#requestEmail").value = request.email || "";
     $("#requestCompanyName").value = request.companyName || "";
     $("#requestBin").value = request.bin || "";
+    $("#requestIik").value = request.iik || "";
+    $("#requestBik").value = request.bik || "";
+    $("#requestBankName").value = request.bankName || "";
     $("#requestLegalAddress").value = request.legalAddress || "";
     $("#requestPosition").value = request.position || "";
     setRequestClientType(request.clientType);
@@ -756,6 +759,9 @@
         : '<b class="request-phone">' + escapeHtml(phone) + '</b>') + '</div>' : "",
       request && request.email ? '<div class="request-contact-row"><span>Почта</span><a href="mailto:' + escapeHtml(request.email) + '">' + escapeHtml(request.email) + '</a></div>' : "",
       request && request.clientType === "legal" && request.companyName ? '<div class="request-contact-row"><span>Юр. лицо</span><b>' + escapeHtml(request.companyName) + (request.bin ? ' · БИН ' + escapeHtml(request.bin) : "") + '</b></div>' : "",
+      request && request.clientType === "legal" && request.iik ? '<div class="request-contact-row"><span>ИИК</span><b>' + escapeHtml(request.iik) + '</b></div>' : "",
+      request && request.clientType === "legal" && request.bik ? '<div class="request-contact-row"><span>БИК</span><b>' + escapeHtml(request.bik) + '</b></div>' : "",
+      request && request.clientType === "legal" && request.bankName ? '<div class="request-contact-row"><span>Банк</span><b>' + escapeHtml(request.bankName) + '</b></div>' : "",
       request && request.clientType === "legal" && request.position ? '<div class="request-contact-row"><span>Должность</span><b>' + escapeHtml(request.position) + '</b></div>' : "",
       request && request.clientType === "legal" && request.legalAddress ? '<div class="request-contact-row"><span>Адрес</span><b>' + escapeHtml(request.legalAddress) + '</b></div>' : ""
     ].filter(Boolean);
@@ -790,6 +796,9 @@
       ["Тип клиента", clientType],
       request.clientType === "legal" ? ["Компания", request.companyName || "Не указана"] : null,
       request.clientType === "legal" ? ["БИН", request.bin || "Не указан"] : null,
+      request.clientType === "legal" ? ["ИИК", request.iik || "Не указан"] : null,
+      request.clientType === "legal" ? ["БИК", request.bik || "Не указан"] : null,
+      request.clientType === "legal" ? ["Банк", request.bankName || "Не указан"] : null,
       request.clientType === "legal" ? ["Должность", request.position || "Не указана"] : null,
       request.clientType === "legal" ? ["Адрес", request.legalAddress || "Не указан"] : null
     ].filter(Boolean).map(item => '<div><span>' + escapeHtml(item[0]) + '</span><b>' + escapeHtml(item[1]) + '</b></div>').join("");
@@ -1150,6 +1159,9 @@
     const clientType = $("#requestClientType").value;
     const companyName = $("#requestCompanyName").value.trim();
     const bin = $("#requestBin").value.trim();
+    const iik = $("#requestIik").value.trim();
+    const bik = $("#requestBik").value.trim();
+    const bankName = $("#requestBankName").value.trim();
     const legalAddress = $("#requestLegalAddress").value.trim();
     const position = $("#requestPosition").value.trim();
     const description = $("#requestDescription").value.trim();
@@ -1164,7 +1176,7 @@
     button.disabled = true;
     button.textContent = "Сохранение…";
     try {
-      await mutateRequest("PUT", { id, name, phone, email, clientType, companyName, bin, legalAddress, position, description, products });
+      await mutateRequest("PUT", { id, name, phone, email, clientType, companyName, bin, iik, bik, bankName, legalAddress, position, description, products });
       drawRequests();
       drawStats();
       closeRequestForm();

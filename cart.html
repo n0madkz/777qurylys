@@ -67,6 +67,11 @@
               <label for="cartBin">БИН<input id="cartBin" name="bin" inputmode="numeric" pattern="[0-9]{12}" maxlength="12" placeholder="12 цифр"></label>
               <label for="cartPosition">Должность <span class="field-optional">необязательно</span><input id="cartPosition" name="position" autocomplete="organization-title" placeholder="Менеджер"></label>
             </div>
+            <div class="cart-form-grid">
+              <label for="cartIik">ИИК <span class="field-optional">необязательно</span><input id="cartIik" name="iik" inputmode="text" autocomplete="off" maxlength="34" placeholder="KZ00 0000 0000 0000 0000"></label>
+              <label for="cartBik">БИК <span class="field-optional">необязательно</span><input id="cartBik" name="bik" inputmode="text" autocomplete="off" maxlength="20" placeholder="ABCDEFGH"></label>
+            </div>
+            <label for="cartBankName">Банк <span class="field-optional">необязательно</span><input id="cartBankName" name="bankName" autocomplete="off" maxlength="160" placeholder="Название банка"></label>
             <label for="cartLegalAddress">Юридический адрес<textarea id="cartLegalAddress" name="legalAddress" rows="3" autocomplete="street-address" placeholder="Город, улица, дом"></textarea></label>
           </div>
           <label for="cartDescription">Описание задачи<textarea id="cartDescription" name="description" rows="4" placeholder="Например: нужен расчёт для ремонта квартиры"></textarea></label>
@@ -82,8 +87,8 @@
 
   <footer class="footer"><div class="container footer__bottom"><span>© 2026 777 Строительный гипермаркет</span><span>г. Атырау, ул. Гинаят Абдрахманов, 85в</span></div></footer>
 <script src="cart-store.js?v=20260810-5"></script>
-<script src="request-queue.js?v=20260814-request-sync"></script>
-<script src="cart.js?v=20260811-request-without-items"></script>
+<script src="request-queue.js?v=20260815-bank-details"></script>
+<script src="cart.js?v=20260815-bank-details"></script>
   <script src="footer.js?v=20260811-brand-signature"></script>
 </body>
 </html>
