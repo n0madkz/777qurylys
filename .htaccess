@@ -1,0 +1,17 @@
+Options -Indexes
+DirectoryIndex index.html
+
+RewriteEngine On
+
+# Keep the existing browser API paths while running them through PHP on Plesk.
+RewriteRule ^api/(.*)$ api/index.php?route=$1 [QSA,L]
+RewriteRule ^sitemap\.xml$ api/index.php?route=sitemap [QSA,L]
+
+# Configuration files must never be served by the web server.
+<FilesMatch "^\.(env|777qurylys\.env)$">
+  Require all denied
+</FilesMatch>
+
+<FilesMatch "\.(env|ini|log)$">
+  Require all denied
+</FilesMatch>

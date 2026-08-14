@@ -109,6 +109,17 @@
   background: #f8faf9;
 }
 
+a.request-document {
+  text-decoration: none;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+
+a.request-document:hover {
+  border-color: var(--orange);
+  background: #fff;
+  transform: translateY(-1px);
+}
+
 .request-document__icon {
   display: grid;
   flex: 0 0 auto;

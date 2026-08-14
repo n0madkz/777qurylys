@@ -665,7 +665,12 @@
       documents.map(document => {
         const name = escapeHtml(document && document.name ? document.name : "Файл");
         const size = escapeHtml(formatDocumentSize(document && document.size));
-        return '<div class="request-document"><span class="request-document__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span><span class="request-document__name" title="' + name + '">' + name + '</span><small class="request-document__size">' + size + "</small></div>";
+        const rawUrl = String(document && document.url || "");
+        const url = /^\/api\/document\?id=[a-f0-9-]+$/i.test(rawUrl) ? rawUrl : "";
+        const content = '<span class="request-document__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span><span class="request-document__name" title="' + name + '">' + name + '</span><small class="request-document__size">' + size + "</small>";
+        return url
+          ? '<a class="request-document" href="' + url + '" title="Скачать документ">' + content + "</a>"
+          : '<div class="request-document">' + content + "</div>";
       }).join("") + "</div></section>";
   }
 
