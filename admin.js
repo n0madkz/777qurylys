@@ -723,11 +723,6 @@
 
   function printRequestAsPdf(request) {
     if (!request) return;
-    const popup = window.open("", "_blank", "width=960,height=760");
-    if (!popup) {
-      window.alert("Браузер заблокировал окно печати. Разрешите всплывающие окна и попробуйте снова.");
-      return;
-    }
 
     const products = Array.isArray(request.products) ? request.products : [];
     const documents = Array.isArray(request.documents) ? request.documents : [];
@@ -748,12 +743,76 @@
       request.clientType === "legal" ? ["Адрес", request.legalAddress || "Не указан"] : null
     ].filter(Boolean).map(item => '<div><span>' + escapeHtml(item[0]) + '</span><b>' + escapeHtml(item[1]) + '</b></div>').join("");
     const documentList = documents.length
-      ? '<section><h2>Прикреплённые документы</h2><ul class="documents">' + documents.map(document => '<li>' + escapeHtml(document?.name || "Файл") + '<small>' + escapeHtml(formatDocumentSize(document?.size)) + '</small></li>').join("") + '</ul></section>'
+      ? '<section><h2>Приложения</h2><div class="request-pdf__attachments">Прикреплённых документов: ' + documents.length + '</div></section>'
       : "";
 
-    popup.document.open();
-    popup.document.write('<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Заявка № ' + requestId + ' — 777</title><style>@page{size:A4;margin:15mm}*{box-sizing:border-box}body{margin:0;color:#151a1b;font-family:Arial,Helvetica,sans-serif;font-size:11pt;line-height:1.45}.header{display:flex;justify-content:space-between;gap:24px;padding-bottom:18px;border-bottom:3px solid #f05a00}.brand{font-size:32pt;font-weight:900;letter-spacing:-3px;line-height:1;color:#151a1b}.brand span{color:#f05a00}.brand-note{margin-top:6px;font-size:8pt;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.meta{text-align:right;color:#65706f;font-size:9pt}.meta b{display:block;margin-bottom:4px;color:#151a1b;font-size:14pt}.title{margin:26px 0 8px;font-size:25pt;line-height:1.1}.eyebrow{margin:0;color:#f05a00;font-size:8pt;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.contacts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 22px;margin:20px 0 24px;padding:16px 18px;background:#f7f8f8;border-radius:8px}.contacts div{padding:7px 0;border-bottom:1px solid #e1e5e3}.contacts span,.documents small{display:block;color:#687172;font-size:8pt}.contacts b{display:block;font-size:10pt;overflow-wrap:anywhere}h2{margin:24px 0 10px;font-size:14pt}table{width:100%;border-collapse:collapse}th{padding:9px 10px;background:#151a1b;color:#fff;font-size:9pt;text-align:left}td{padding:10px;border-bottom:1px solid #dfe4e2;vertical-align:top}td:first-child,td:last-child{width:70px;text-align:center}td small{display:block;margin-top:2px;color:#687172;font-size:8pt}.empty{padding:16px;text-align:left!important;color:#687172}.summary{margin-top:10px;text-align:right;font-weight:800}.description{padding:14px 16px;border-left:3px solid #f05a00;background:#fff8f2;white-space:pre-wrap}.documents{margin:0;padding:0;list-style:none}.documents li{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid #dfe4e2}.footer{display:flex;justify-content:space-between;gap:24px;margin-top:42px;padding-top:12px;border-top:1px solid #dfe4e2;color:#687172;font-size:8pt}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:48px}.signatures div{padding-top:28px;border-top:1px solid #151a1b;color:#687172;font-size:9pt}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><header class="header"><div><div class="brand">777<span>.</span></div><div class="brand-note">Строительный гипермаркет · с 2011 года</div></div><div class="meta"><b>Заявка № ' + requestId + '</b><span>Создана: ' + escapeHtml(requestDate(request.createdAt)) + '</span><br><span>Распечатано: ' + escapeHtml(requestDate(new Date().toISOString())) + '</span></div></header><p class="eyebrow">Заявка клиента</p><h1 class="title">Материалы и позиции для расчёта</h1><section class="contacts">' + contacts + '</section><section><h2>Позиции</h2><table><thead><tr><th>№</th><th>Наименование</th><th>Кол-во</th></tr></thead><tbody>' + rows + '</tbody></table><div class="summary">Позиций: ' + products.length + ' · Всего единиц: ' + totalQuantity + '</div></section><section><h2>Описание задачи</h2><div class="description">' + escapeHtml(request.description || "Без описания") + '</div></section>' + documentList + '<div class="signatures"><div>Менеджер</div><div>Клиент</div></div><footer class="footer"><span>777 — строительный гипермаркет</span><span>+7 775 824 43 80 · info@777.kz</span></footer><script>window.addEventListener("load",function(){setTimeout(function(){window.focus();window.print();},150)});window.onafterprint=function(){window.close()};<\/script></body></html>');
-    popup.document.close();
+    document.getElementById("requestPdfPrint")?.remove();
+    document.getElementById("requestPdfPrintStyles")?.remove();
+
+    const printStyles = document.createElement("style");
+    printStyles.id = "requestPdfPrintStyles";
+    printStyles.textContent = `
+      #requestPdfPrint { display: none; }
+      @page { size: A4; margin: 10mm; }
+      @media print {
+        body > *:not(#requestPdfPrint):not(#requestPdfPrintStyles) { display: none !important; }
+        #requestPdfPrint { display: block !important; color: #ba5000; font-family: Arial, Helvetica, sans-serif; font-size: 11pt; line-height: 1.45; }
+        #requestPdfPrint, #requestPdfPrint * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      }
+      .request-pdf__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding-bottom: 16px; border-bottom: 3px solid #f47b00; }
+      .request-pdf__brand { display: flex; align-items: center; gap: 14px; }
+      .request-pdf__logo { display: block; width: 116px; height: auto; }
+      .request-pdf__brand-copy { color: #d65f00; font-size: 8pt; font-weight: 800; letter-spacing: .12em; line-height: 1.35; text-transform: uppercase; }
+      .request-pdf__brand-copy span { display: block; color: #f47b00; font-size: 7pt; }
+      .request-pdf__number { color: #d65f00; font-size: 14pt; font-weight: 800; text-align: right; }
+      .request-pdf__eyebrow { margin: 22px 0 0; color: #f47b00; font-size: 8pt; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+      .request-pdf__title { margin: 8px 0 18px; color: #d65f00; font-size: 25pt; line-height: 1.1; }
+      .request-pdf__contacts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; margin: 0 0 24px; padding: 14px 18px; background: #fff4ea; border: 1px solid #ffd3af; border-radius: 8px; }
+      .request-pdf__contacts div { padding: 7px 0; border-bottom: 1px solid #ffd3af; }
+      .request-pdf__contacts span { display: block; color: #cb6a1d; font-size: 8pt; }
+      .request-pdf__contacts b { display: block; color: #b94d00; font-size: 10pt; overflow-wrap: anywhere; }
+      .request-pdf h2 { margin: 24px 0 10px; color: #d65f00; font-size: 14pt; }
+      .request-pdf table { width: 100%; border-collapse: collapse; }
+      .request-pdf th { padding: 9px 10px; background: #f47b00; color: #fff; font-size: 9pt; text-align: left; }
+      .request-pdf td { padding: 10px; border-bottom: 1px solid #ffd3af; color: #b94d00; vertical-align: top; }
+      .request-pdf td:first-child, .request-pdf td:last-child { width: 70px; text-align: center; }
+      .request-pdf td small { display: block; margin-top: 2px; color: #cf7127; font-size: 8pt; }
+      .request-pdf .empty { padding: 16px; color: #b94d00; text-align: left !important; }
+      .request-pdf__summary { margin-top: 10px; color: #d65f00; font-weight: 800; text-align: right; }
+      .request-pdf__description { padding: 14px 16px; border-left: 3px solid #f47b00; background: #fff4ea; color: #b94d00; white-space: pre-wrap; }
+      .request-pdf__attachments { padding: 12px 16px; border: 1px solid #ffd3af; border-radius: 8px; color: #b94d00; }
+      .request-pdf__signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 48px; }
+      .request-pdf__signatures div { padding-top: 28px; border-top: 1px solid #f47b00; color: #cf7127; font-size: 9pt; }
+      .request-pdf__footer { display: flex; justify-content: space-between; gap: 24px; margin-top: 42px; padding-top: 12px; border-top: 1px solid #ffd3af; color: #cf7127; font-size: 8pt; }
+    `;
+
+    const sheet = document.createElement("section");
+    sheet.id = "requestPdfPrint";
+    sheet.className = "request-pdf";
+    sheet.setAttribute("aria-hidden", "true");
+    sheet.innerHTML = '<header class="request-pdf__header"><div class="request-pdf__brand"><img class="request-pdf__logo" src="assets/main-logo.svg" alt="777"><div class="request-pdf__brand-copy">Строительный<br>гипермаркет<span>с 2011 года</span></div></div><div class="request-pdf__number">Заявка № ' + requestId + '</div></header><p class="request-pdf__eyebrow">Заявка клиента</p><h1 class="request-pdf__title">Материалы и позиции для расчёта</h1><section class="request-pdf__contacts">' + contacts + '</section><section><h2>Позиции</h2><table><thead><tr><th>№</th><th>Наименование</th><th>Кол-во</th></tr></thead><tbody>' + rows + '</tbody></table><div class="request-pdf__summary">Позиций: ' + products.length + ' · Всего единиц: ' + totalQuantity + '</div></section><section><h2>Описание задачи</h2><div class="request-pdf__description">' + escapeHtml(request.description || "Без описания") + '</div></section>' + documentList + '<div class="request-pdf__signatures"><div>Менеджер</div><div>Клиент</div></div><footer class="request-pdf__footer"><span>777 — строительный гипермаркет</span><span>+7 775 824 43 80 · info@777.kz</span></footer>';
+
+    document.body.append(printStyles, sheet);
+    const cleanup = () => {
+      sheet.remove();
+      printStyles.remove();
+    };
+    window.addEventListener("afterprint", cleanup, { once: true });
+
+    let didPrint = false;
+    const print = () => {
+      if (didPrint) return;
+      didPrint = true;
+      window.setTimeout(() => window.print(), 80);
+    };
+    const logo = sheet.querySelector(".request-pdf__logo");
+    if (logo && !logo.complete) {
+      logo.addEventListener("load", print, { once: true });
+      logo.addEventListener("error", print, { once: true });
+      window.setTimeout(print, 800);
+    } else {
+      print();
+    }
   }
 
   function drawRequests() {
