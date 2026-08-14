@@ -333,6 +333,10 @@
         credentials: "same-origin",
         cache: "no-store"
       });
+      if (response.status === 401) {
+        window.location.replace("/admin-login.html");
+        return;
+      }
       if (!response.ok) throw new Error("Не удалось загрузить каталог");
       const data = await response.json();
       if (Array.isArray(data.products)) products = data.products;
@@ -362,6 +366,10 @@
   async function loadRequests() {
     try {
       const response = await fetch("/api/admin/requests", { credentials: "same-origin", cache: "no-store" });
+      if (response.status === 401) {
+        window.location.replace("/admin-login.html");
+        return;
+      }
       if (!response.ok) throw new Error("Не удалось загрузить заявки");
       const data = await response.json();
       if (Array.isArray(data.requests)) {

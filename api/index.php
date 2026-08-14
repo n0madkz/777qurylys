@@ -321,6 +321,11 @@ try {
     }
     if ($route === 'admin/login') send_json(login());
     if ($route === 'admin/logout') send_json(logout());
+    if ($route === 'admin/session') {
+        require_method('GET');
+        admin_required();
+        send_json(['ok' => true]);
+    }
     if ($route === 'admin/products') {
         admin_required();
         if ($method === 'GET') send_json(['products' => get_products(false), 'settings' => array_merge(get_settings(), ['heroSlides' => get_slides(false)]), 'categories' => get_categories(false)]);

@@ -10,6 +10,16 @@
   <link rel="stylesheet" href="admin-categories.css">
   <link rel="stylesheet" href="admin-requests.css?v=20260811-request-accordion">
   <link rel="stylesheet" href="primary-logo.css?v=20260811-admin-footer-logo">
+  <style>html.admin-auth-pending body { visibility: hidden; }</style>
+  <script>
+    document.documentElement.classList.add("admin-auth-pending");
+    fetch("/api/admin/session", { credentials: "same-origin", cache: "no-store" })
+      .then(response => {
+        if (!response.ok) window.location.replace("/admin-login.html");
+        else document.documentElement.classList.remove("admin-auth-pending");
+      })
+      .catch(() => window.location.replace("/admin-login.html"));
+  </script>
 </head>
 <body class="admin-body">
   <header class="admin-header">
