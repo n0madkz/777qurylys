@@ -46,6 +46,11 @@ html[lang="kz"] body{font-family:"Segoe UI",Arial,sans-serif}
 .product-title-link{display:block;transition:color .2s ease}
 .product-title-link:hover{color:var(--orange)}
 .product-title-link:focus-visible,.product-media__link:focus-visible{outline:3px solid var(--orange);outline-offset:-3px}
+.catalog-filter-status{margin:12px 0;color:var(--muted);font-size:12px}
+.catalog-loading{grid-column:1/-1;display:grid;justify-items:center;gap:7px;min-height:260px;align-content:center;padding:32px;color:var(--muted);text-align:center;border:1px solid var(--line);border-radius:14px;background:#fff}
+.catalog-loading b{color:var(--ink);font-size:14px}.catalog-loading p{margin:0;font-size:12px}.catalog-loading button{margin-top:7px;min-height:38px;padding:0 14px;border:1px solid var(--ink);border-radius:8px;background:#fff;color:var(--ink);font-size:12px;font-weight:800}.catalog-loading button:hover{border-color:var(--orange);color:var(--orange)}
+.catalog-loading__spinner{width:28px;height:28px;border:3px solid #e4e8e6;border-top-color:var(--orange);border-radius:50%;animation:catalog-spin .7s linear infinite}@keyframes catalog-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.catalog-loading__spinner{animation:none}}
 .product-page{padding-top:42px;padding-bottom:90px}
 .product-back{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:800;margin-bottom:24px;color:#4f5958}
 .product-back svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}

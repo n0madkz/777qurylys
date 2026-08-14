@@ -41,8 +41,11 @@
   const resultCount = $("#resultCount");
   const pagination = $("#catalogPagination");
   const pageSize = 24;
-  let products = fallbackProducts.slice();
-  let categories = defaultCategories.slice();
+  // The catalogue is always loaded from the server. Legacy fallback data must
+  // never flash on screen before the current Supabase data arrives.
+  let products = [];
+  let categories = [];
+  let catalogState = "loading";
   const params = new URLSearchParams(window.location.search);
   let activeCategory = params.get("category") || "all";
   let currentPage = Math.max(1, Number(params.get("page")) || 1);
@@ -216,6 +219,20 @@
   }
 
   function draw() {
+    if (catalogState === "loading") {
+      resultCount.textContent = "Загружаем каталог…";
+      filterMount.innerHTML = '<p class="catalog-filter-status">Загружаем категории…</p>';
+      grid.innerHTML = '<div class="catalog-loading" role="status" aria-live="polite"><span class="catalog-loading__spinner" aria-hidden="true"></span><b>Загружаем актуальные товары</b><p>Пожалуйста, подождите.</p></div>';
+      pagination.innerHTML = "";
+      return;
+    }
+    if (catalogState === "error") {
+      resultCount.textContent = "Каталог временно недоступен";
+      filterMount.innerHTML = "";
+      grid.innerHTML = '<div class="catalog-loading catalog-loading--error" role="alert"><b>Не удалось загрузить каталог</b><p>Обновите страницу или попробуйте немного позже.</p><button type="button" data-retry-catalog>Повторить</button></div>';
+      pagination.innerHTML = "";
+      return;
+    }
     const list = visibleProducts();
     const pages = Math.max(1, Math.ceil(list.length / pageSize));
     currentPage = Math.min(currentPage, pages);
@@ -250,12 +267,15 @@
       const response = await fetch("/api/catalog", { cache: "no-store" });
       if (!response.ok) throw new Error("Каталог временно недоступен");
       const data = await response.json();
-      if (Array.isArray(data.products)) products = data.products.filter(isProductActive);
-      if (Array.isArray(data.categories) && data.categories.length) categories = data.categories;
-      draw();
+      if (!Array.isArray(data.products) || !Array.isArray(data.categories)) throw new Error("Некорректный ответ каталога");
+      products = data.products.filter(isProductActive);
+      categories = data.categories;
+      catalogState = "ready";
     } catch (error) {
       console.warn(error);
+      catalogState = "error";
     }
+    draw();
   }
 
   filterMount.addEventListener("click", event => {
@@ -267,6 +287,12 @@
   });
 
   grid.addEventListener("click", event => {
+    if (event.target.closest("[data-retry-catalog]")) {
+      catalogState = "loading";
+      draw();
+      loadCatalog();
+      return;
+    }
     const button = event.target.closest("[data-add-cart]");
     if (!button || !window.CartStore) return;
     const added = window.CartStore.add(button.dataset.addCart);
