@@ -349,18 +349,39 @@
     }
   }
 
-  async function saveRemote() {
-    const response = await fetch("/api/admin/products", {
+  async function saveRemote(section = "products", includeHeroSlides = false) {
+    const endpoint = section === "settings"
+      ? "/api/admin/settings"
+      : section === "categories"
+        ? "/api/admin/categories"
+        : "/api/admin/products";
+    const settingsForSave = { ...settings };
+    if (!includeHeroSlides) delete settingsForSave.heroSlides;
+    const payload = section === "settings"
+      ? { settings: settingsForSave }
+      : section === "categories"
+        ? { categories }
+        : { products };
+    const response = await fetch(endpoint, {
       method: "PUT",
       credentials: "same-origin",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ products, settings, categories })
+      body: JSON.stringify(payload)
     });
 
-    if (!response.ok) throw new Error("Сервер не сохранил изменения");
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      window.location.replace("/admin-login.html");
+      throw new Error("Сессия администратора истекла. Войдите снова.");
+    }
+    if (!response.ok) {
+      throw new Error(data.error || ("Сервер не сохранил изменения (HTTP " + response.status + ")."));
+    }
+    if (Array.isArray(data.products)) products = data.products;
+    if (data.settings && typeof data.settings === "object") settings = data.settings;
     if (Array.isArray(data.categories) && data.categories.length) categories = cloneCategories(data.categories);
     saveLocal();
+    return data;
   }
 
   async function loadRequests() {
@@ -756,34 +777,34 @@
       @page { size: A4; margin: 10mm; }
       @media print {
         body > *:not(#requestPdfPrint):not(#requestPdfPrintStyles) { display: none !important; }
-        #requestPdfPrint { display: block !important; color: #ba5000; font-family: Arial, Helvetica, sans-serif; font-size: 11pt; line-height: 1.45; }
+        #requestPdfPrint { display: block !important; color: #181d1f; font-family: Arial, Helvetica, sans-serif; font-size: 11pt; line-height: 1.45; }
         #requestPdfPrint, #requestPdfPrint * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       }
       .request-pdf__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding-bottom: 16px; border-bottom: 3px solid #f47b00; }
       .request-pdf__brand { display: flex; align-items: center; gap: 14px; }
       .request-pdf__logo { display: block; width: 116px; height: auto; }
-      .request-pdf__brand-copy { color: #d65f00; font-size: 8pt; font-weight: 800; letter-spacing: .12em; line-height: 1.35; text-transform: uppercase; }
+      .request-pdf__brand-copy { color: #181d1f; font-size: 8pt; font-weight: 800; letter-spacing: .12em; line-height: 1.35; text-transform: uppercase; }
       .request-pdf__brand-copy span { display: block; color: #f47b00; font-size: 7pt; }
-      .request-pdf__number { color: #d65f00; font-size: 14pt; font-weight: 800; text-align: right; }
+      .request-pdf__number { color: #181d1f; font-size: 14pt; font-weight: 800; text-align: right; }
       .request-pdf__eyebrow { margin: 22px 0 0; color: #f47b00; font-size: 8pt; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
-      .request-pdf__title { margin: 8px 0 18px; color: #d65f00; font-size: 25pt; line-height: 1.1; }
+      .request-pdf__title { margin: 8px 0 18px; color: #181d1f; font-size: 25pt; line-height: 1.1; }
       .request-pdf__contacts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; margin: 0 0 24px; padding: 14px 18px; background: #fff4ea; border: 1px solid #ffd3af; border-radius: 8px; }
       .request-pdf__contacts div { padding: 7px 0; border-bottom: 1px solid #ffd3af; }
-      .request-pdf__contacts span { display: block; color: #cb6a1d; font-size: 8pt; }
-      .request-pdf__contacts b { display: block; color: #b94d00; font-size: 10pt; overflow-wrap: anywhere; }
-      .request-pdf h2 { margin: 24px 0 10px; color: #d65f00; font-size: 14pt; }
+      .request-pdf__contacts span { display: block; color: #6d7677; font-size: 8pt; }
+      .request-pdf__contacts b { display: block; color: #181d1f; font-size: 10pt; overflow-wrap: anywhere; }
+      .request-pdf h2 { margin: 24px 0 10px; color: #181d1f; font-size: 14pt; }
       .request-pdf table { width: 100%; border-collapse: collapse; }
-      .request-pdf th { padding: 9px 10px; background: #f47b00; color: #fff; font-size: 9pt; text-align: left; }
-      .request-pdf td { padding: 10px; border-bottom: 1px solid #ffd3af; color: #b94d00; vertical-align: top; }
+      .request-pdf th { padding: 9px 10px; background: #181d1f; border-bottom: 3px solid #f47b00; color: #fff; font-size: 9pt; text-align: left; }
+      .request-pdf td { padding: 10px; border-bottom: 1px solid #e4e7e5; color: #181d1f; vertical-align: top; }
       .request-pdf td:first-child, .request-pdf td:last-child { width: 70px; text-align: center; }
-      .request-pdf td small { display: block; margin-top: 2px; color: #cf7127; font-size: 8pt; }
-      .request-pdf .empty { padding: 16px; color: #b94d00; text-align: left !important; }
-      .request-pdf__summary { margin-top: 10px; color: #d65f00; font-weight: 800; text-align: right; }
-      .request-pdf__description { padding: 14px 16px; border-left: 3px solid #f47b00; background: #fff4ea; color: #b94d00; white-space: pre-wrap; }
-      .request-pdf__attachments { padding: 12px 16px; border: 1px solid #ffd3af; border-radius: 8px; color: #b94d00; }
+      .request-pdf td small { display: block; margin-top: 2px; color: #6d7677; font-size: 8pt; }
+      .request-pdf .empty { padding: 16px; color: #6d7677; text-align: left !important; }
+      .request-pdf__summary { margin-top: 10px; color: #181d1f; font-weight: 800; text-align: right; }
+      .request-pdf__description { padding: 14px 16px; border-left: 3px solid #f47b00; background: #fff8f2; color: #181d1f; white-space: pre-wrap; }
+      .request-pdf__attachments { padding: 12px 16px; border: 1px solid #ffd3af; border-radius: 8px; color: #181d1f; }
       .request-pdf__signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 48px; }
-      .request-pdf__signatures div { padding-top: 28px; border-top: 1px solid #f47b00; color: #cf7127; font-size: 9pt; }
-      .request-pdf__footer { display: flex; justify-content: space-between; gap: 24px; margin-top: 42px; padding-top: 12px; border-top: 1px solid #ffd3af; color: #cf7127; font-size: 8pt; }
+      .request-pdf__signatures div { padding-top: 28px; border-top: 1px solid #f47b00; color: #6d7677; font-size: 9pt; }
+      .request-pdf__footer { display: flex; justify-content: space-between; gap: 24px; margin-top: 42px; padding-top: 12px; border-top: 1px solid #ffd3af; color: #6d7677; font-size: 8pt; }
     `;
 
     const sheet = document.createElement("section");
@@ -934,7 +955,7 @@
 
   async function persistHeroSlides(message) {
     try {
-      await saveRemote();
+      await saveRemote("settings", true);
       drawHeroSlides();
       setStatus("#heroSlidesStatus", message, true);
       return true;
@@ -944,9 +965,9 @@
     }
   }
 
-  async function persistAndRefresh(statusSelector, successMessage) {
+  async function persistAndRefresh(statusSelector, successMessage, section = "products") {
     try {
-      await saveRemote();
+      await saveRemote(section);
       drawProducts();
       drawCategories();
       drawStats();
@@ -1242,7 +1263,7 @@
       }
       if (!window.confirm("Удалить категорию «" + category.name + "»?")) return;
       categories = categories.filter(item => item.id !== id);
-      await persistAndRefresh("#categoryStatus", "Категория удалена.");
+      await persistAndRefresh("#categoryStatus", "Категория удалена.", "categories");
     }
   });
 
@@ -1303,7 +1324,7 @@
       categories.push({ id, name, parent });
     }
 
-    const saved = await persistAndRefresh("#categoryStatus", "Категория сохранена и доступна при добавлении товара.");
+    const saved = await persistAndRefresh("#categoryStatus", "Категория сохранена и доступна при добавлении товара.", "categories");
     if (saved) closeCategoryForm();
   });
 
@@ -1376,7 +1397,7 @@
       email: $("#settingEmail").value.trim(),
       address: $("#settingAddress").value.trim()
     };
-    await persistAndRefresh("#settingsStatus", "Настройки сохранены.");
+    await persistAndRefresh("#settingsStatus", "Настройки сохранены.", "settings");
   });
 
   (async () => {

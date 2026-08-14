@@ -30,7 +30,7 @@ function product_row(array $value): array {
     $known = ['id', 'cat', 'category', 'category_id', 'name', 'title', 'brand', 'manufacturer', 'sku', 'description', 'specs', 'specifications', 'image', 'image_path', 'image_alt', 'badge', 'sort_order', 'active', 'is_active', 'translations', 'metadata'];
     $metadata = json_value($value['metadata'] ?? []);
     foreach ($value as $key => $item) if (!in_array($key, $known, true)) $metadata[$key] = $item;
-    $image = text_value($value['image'] ?? $value['image_path'] ?? '', 2200000);
+    $image = internal_storage_path(text_value($value['image'] ?? $value['image_path'] ?? '', 2200000), 'product-images');
     if ($image !== '') $image = persist_image_source($image, 'product-images', 'products/' . preg_replace('/[^a-z0-9-]/i', '-', $id));
     $name = $value['name'] ?? $value['title'] ?? '';
     if (is_array($name)) $name = $name['ru'] ?? $name['kz'] ?? $name['en'] ?? '';
@@ -164,6 +164,95 @@ function store_catalog(array $body): array {
     }
     if ($slideRows) batch_upsert('hero_slides', $slideRows);
     return ['ok' => true, 'products' => get_products(false), 'settings' => array_merge(get_settings(), ['heroSlides' => get_slides(false)]), 'categories' => get_categories(false)];
+}
+
+/** Persist only product records. Settings, slides and categories are deliberately
+ * not touched here: a phone-number edit must never be able to overwrite a
+ * product import (and vice versa). */
+function store_products(array $body): array {
+    if (!isset($body['products']) || !is_array($body['products'])) throw new ApiError('Нужен массив товаров', 400);
+    $products = array_values(array_filter(array_map('product_row', $body['products']), fn($row) => $row['name'] !== ''));
+    $existingProducts = supabase_json('GET', rest_path('products', '?select=id'));
+    $wantedProductIds = array_column($products, 'id');
+    foreach (is_array($existingProducts) ? $existingProducts : [] as $existing) {
+        if (!in_array((string)$existing['id'], $wantedProductIds, true)) delete_by_id('products', (string)$existing['id']);
+    }
+    if ($products) batch_upsert('products', $products);
+    return ['ok' => true, 'products' => get_products(false)];
+}
+
+function category_depth(string $id, array $byId, array &$memo = [], array $trail = []): int {
+    if (isset($memo[$id])) return $memo[$id];
+    if (isset($trail[$id])) throw new ApiError('Категории не могут образовывать цикл', 400);
+    $parent = (string)($byId[$id]['parent_id'] ?? '');
+    if ($parent === '' || !isset($byId[$parent])) return $memo[$id] = 0;
+    $trail[$id] = true;
+    return $memo[$id] = category_depth($parent, $byId, $memo, $trail) + 1;
+}
+
+function store_categories(array $body): array {
+    if (!isset($body['categories']) || !is_array($body['categories'])) throw new ApiError('Нужен список категорий', 400);
+    $categories = array_values(array_filter(array_map('category_row', $body['categories']), fn($row) => $row['id'] !== '' && $row['name'] !== ''));
+    $byId = [];
+    foreach ($categories as $row) $byId[$row['id']] = $row;
+    $memo = [];
+    usort($categories, fn($a, $b) => category_depth($a['id'], $byId, $memo) <=> category_depth($b['id'], $byId, $memo));
+    $existing = supabase_json('GET', rest_path('categories', '?select=id,parent_id'));
+    $wantedIds = array_column($categories, 'id');
+    $removed = array_values(array_filter(is_array($existing) ? $existing : [], fn($row) => !in_array((string)$row['id'], $wantedIds, true)));
+    usort($removed, fn($a, $b) => strlen((string)$b['parent_id']) <=> strlen((string)$a['parent_id']));
+    foreach ($removed as $row) delete_by_id('categories', (string)$row['id']);
+    if ($categories) batch_upsert('categories', $categories);
+    return ['ok' => true, 'categories' => get_categories(false)];
+}
+
+function internal_storage_path(string $source, string $bucket): string {
+    if (str_starts_with($source, '/api/media?')) {
+        $query = [];
+        parse_str((string)parse_url($source, PHP_URL_QUERY), $query);
+        $path = text_value($query['path'] ?? '', 2200000);
+        if (($query['bucket'] ?? '') === $bucket && storage_path_valid($path)) return $path;
+    }
+    return $source;
+}
+
+function store_hero_slides(array $slides): void {
+    $slideRows = [];
+    foreach (array_slice($slides, 0, 5) as $index => $slide) {
+        if (!is_array($slide)) continue;
+        $id = text_value($slide['id'] ?? '', 100);
+        $source = internal_storage_path(text_value($slide['src'] ?? '', 2200000), 'hero-images');
+        if ($id === '' || $source === '') continue;
+        $slideRows[] = [
+            'id' => $id,
+            'storage_path' => persist_image_source($source, 'hero-images', 'hero/' . preg_replace('/[^a-z0-9-]/i', '-', $id)),
+            'width' => max(1, min(3840, (int)($slide['width'] ?? 1920))),
+            'height' => max(1, min(2160, (int)($slide['height'] ?? 1080))),
+            'label' => text_value($slide['label'] ?? 'Фон баннера', 100),
+            'translations' => json_value($slide['translations'] ?? []),
+            'sort_order' => $index,
+            'is_active' => true
+        ];
+    }
+    $existingSlides = supabase_json('GET', rest_path('hero_slides', '?select=id'));
+    $wantedSlideIds = array_column($slideRows, 'id');
+    foreach (is_array($existingSlides) ? $existingSlides : [] as $existing) {
+        if (!in_array((string)$existing['id'], $wantedSlideIds, true)) delete_by_id('hero_slides', (string)$existing['id']);
+    }
+    if ($slideRows) batch_upsert('hero_slides', $slideRows);
+}
+
+function store_settings(array $body): array {
+    if (!isset($body['settings']) || !is_array($body['settings'])) throw new ApiError('Нужны настройки сайта', 400);
+    $incoming = json_value($body['settings']);
+    $hasSlides = array_key_exists('heroSlides', $incoming) && is_array($incoming['heroSlides']);
+    $slides = $hasSlides ? $incoming['heroSlides'] : [];
+    unset($incoming['heroSlides']);
+    $current = get_settings();
+    $settings = array_merge($current, $incoming);
+    supabase_json('POST', rest_path('site_settings', '?on_conflict=key'), [['key' => 'site', 'value' => $settings]], ['Prefer: resolution=merge-duplicates,return=representation']);
+    if ($hasSlides) store_hero_slides($slides);
+    return ['ok' => true, 'settings' => array_merge(get_settings(), ['heroSlides' => get_slides(false)])];
 }
 
 function save_request(): array {
@@ -329,7 +418,19 @@ try {
     if ($route === 'admin/products') {
         admin_required();
         if ($method === 'GET') send_json(['products' => get_products(false), 'settings' => array_merge(get_settings(), ['heroSlides' => get_slides(false)]), 'categories' => get_categories(false)]);
-        if ($method === 'PUT') send_json(store_catalog(request_json()));
+        if ($method === 'PUT') send_json(store_products(request_json()));
+        throw new ApiError('Method not allowed', 405);
+    }
+    if ($route === 'admin/categories') {
+        admin_required();
+        if ($method === 'GET') send_json(['categories' => get_categories(false)]);
+        if ($method === 'PUT') send_json(store_categories(request_json()));
+        throw new ApiError('Method not allowed', 405);
+    }
+    if ($route === 'admin/settings') {
+        admin_required();
+        if ($method === 'GET') send_json(['settings' => array_merge(get_settings(), ['heroSlides' => get_slides(false)])]);
+        if ($method === 'PUT') send_json(store_settings(request_json()));
         throw new ApiError('Method not allowed', 405);
     }
     if ($route === 'admin/requests') send_json(admin_requests($method));
