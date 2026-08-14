@@ -27,11 +27,15 @@ function category_client(array $row): array {
 function product_row(array $value): array {
     $id = text_value($value['id'] ?? '', 120);
     if ($id === '') $id = bin2hex(random_bytes(8));
-    $known = ['id', 'cat', 'category', 'category_id', 'name', 'title', 'brand', 'manufacturer', 'sku', 'description', 'specs', 'specifications', 'image', 'image_path', 'image_alt', 'badge', 'sort_order', 'active', 'is_active', 'translations', 'metadata'];
+    $known = ['id', 'cat', 'category', 'category_id', 'name', 'title', 'brand', 'manufacturer', 'sku', 'description', 'specs', 'specifications', 'image', 'image_path', 'thumbnail', 'thumbnail_path', 'image_alt', 'badge', 'sort_order', 'active', 'is_active', 'translations', 'metadata'];
     $metadata = json_value($value['metadata'] ?? []);
     foreach ($value as $key => $item) if (!in_array($key, $known, true)) $metadata[$key] = $item;
     $image = internal_storage_path(text_value($value['image'] ?? $value['image_path'] ?? '', 2200000), 'product-images');
     if ($image !== '') $image = persist_image_source($image, 'product-images', 'products/' . preg_replace('/[^a-z0-9-]/i', '-', $id));
+    $thumbnail = internal_storage_path(text_value($value['thumbnail'] ?? $value['thumbnail_path'] ?? $metadata['thumbnail'] ?? '', 2200000), 'product-images');
+    if ($thumbnail !== '') $thumbnail = persist_image_source($thumbnail, 'product-images', 'previews/' . preg_replace('/[^a-z0-9-]/i', '-', $id));
+    if ($thumbnail !== '') $metadata['thumbnail'] = $thumbnail;
+    else unset($metadata['thumbnail']);
     $name = $value['name'] ?? $value['title'] ?? '';
     if (is_array($name)) $name = $name['ru'] ?? $name['kz'] ?? $name['en'] ?? '';
     return [
@@ -54,6 +58,9 @@ function product_row(array $value): array {
 
 function product_client(array $row): array {
     $metadata = json_value($row['metadata'] ?? []);
+    if (!empty($metadata['thumbnail'])) {
+        $metadata['thumbnail'] = storage_source((string)$metadata['thumbnail'], 'product-images');
+    }
     $product = array_merge($metadata, [
         'id' => (string)$row['id'],
         'cat' => (string)($row['category_id'] ?? ''),

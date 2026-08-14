@@ -67,7 +67,7 @@
   };
 
   const brandFor = product => product && (product.brand || product.manufacturer) || "777";
-  const imageFor = product => product && product.image || "assets/building-materials-hero.png";
+  const imageFor = product => product && (product.thumbnail || product.image) || "assets/building-materials-hero.png";
   const productUrl = product => "product.html?id=" + encodeURIComponent(product.id);
   const isProductActive = product => product && product.active !== false;
 

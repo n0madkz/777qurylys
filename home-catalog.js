@@ -24,7 +24,7 @@
     "https://media.siniat.de/pi57691/preview/471426647/siniat-cd-profil": "assets/product-profile.jpg",
     "https://mobileimages.lowes.com/productimages/63528a1b-80c9-4744-96fc-8c8a5a5e2e5a/73851761.jpeg?size=xl": "assets/product-drill.jpg"
   };
-  const imageFor = product => localProductImages[product.image] || product.image || fallbackImages[product.id] || "assets/building-materials-hero.png";
+  const imageFor = product => product.thumbnail || localProductImages[product.image] || product.image || fallbackImages[product.id] || "assets/building-materials-hero.png";
   const productUrl = product => "product.html?id=" + encodeURIComponent(product.id);
   const isProductActive = product => product && product.active !== false;
 

@@ -39,6 +39,10 @@
   const maxHeroSlides = 5;
   const maxHeroSourceSize = 15 * 1024 * 1024;
   const maxStoredHeroSize = 1400 * 1024;
+  const maxProductSourceSize = 10 * 1024 * 1024;
+  const maxStoredProductImageSize = 1100 * 1024;
+  const maxStoredProductPreviewSize = 150 * 1024;
+  let pendingProductImage = null;
 
   const $ = selector => document.querySelector(selector);
   const escapeHtml = value => String(value == null ? "" : value).replace(/[&<>'"]/g, char => ({
@@ -430,6 +434,25 @@
     status.className = "form-status " + (success ? "is-success" : "is-error");
   }
 
+  function renderProductImagePreview(source, title, info) {
+    const preview = $("#productImagePreview");
+    const image = $("#productImagePreviewImage");
+    const previewTitle = $("#productImagePreviewTitle");
+    const previewInfo = $("#productImagePreviewInfo");
+    if (!preview || !image || !previewTitle || !previewInfo) return;
+    if (!source) {
+      preview.hidden = true;
+      image.removeAttribute("src");
+      previewTitle.textContent = "Файл не выбран";
+      previewInfo.textContent = "Для карточек автоматически создаётся лёгкое WebP-превью 640 × 480 px.";
+      return;
+    }
+    preview.hidden = false;
+    image.src = source;
+    previewTitle.textContent = title || "Текущее фото товара";
+    previewInfo.textContent = info || "В карточках каталога используется лёгкая WebP-версия.";
+  }
+
   function openProductForm(product) {
     $("#productForm").hidden = false;
     $("#productFormTitle").textContent = product ? "Редактирование товара" : "Новый товар";
@@ -437,6 +460,13 @@
     $("#productName").value = product ? productName(product) : "";
     $("#productBrand").value = product ? product.brand || product.manufacturer || "" : "";
     $("#productImage").value = product ? product.image || "" : "";
+    $("#productImageFile").value = "";
+    pendingProductImage = null;
+    renderProductImagePreview(
+      product ? product.thumbnail || product.image : "",
+      product ? "Текущее фото товара" : "",
+      product ? "В карточках каталога показывается лёгкая WebP-версия." : ""
+    );
     $("#productDescription").value = product ? product.description || "" : "";
     $("#productSpecs").value = product ? specsToText(product) : "";
     $("#productActive").checked = product ? isProductActive(product) : true;
@@ -910,6 +940,62 @@
     image.src = url;
   });
 
+  function productImageCanvas(image, width, height) {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d", { alpha: false });
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    const scale = Math.min(width / image.naturalWidth, height / image.naturalHeight);
+    const drawWidth = Math.max(1, Math.round(image.naturalWidth * scale));
+    const drawHeight = Math.max(1, Math.round(image.naturalHeight * scale));
+    context.drawImage(image, Math.round((width - drawWidth) / 2), Math.round((height - drawHeight) / 2), drawWidth, drawHeight);
+    return canvas;
+  }
+
+  async function compactProductWebp(canvas, limit, initialQuality) {
+    let quality = initialQuality;
+    let blob = await canvasToWebp(canvas, quality);
+    while (blob.size > limit && quality > 0.5) {
+      quality -= 0.06;
+      blob = await canvasToWebp(canvas, quality);
+    }
+    return blob;
+  }
+
+  async function prepareProductImage(file) {
+    if (!file || !/^image\/(jpeg|png|webp)$/i.test(file.type)) {
+      throw new Error("Выберите фотографию в формате JPG, PNG или WebP.");
+    }
+    if (file.size > maxProductSourceSize) {
+      throw new Error("Размер исходного фото не должен превышать 10 МБ.");
+    }
+    const image = await loadLocalImage(file);
+    if (image.naturalWidth < 320 || image.naturalHeight < 320) {
+      throw new Error("Изображение слишком маленькое. Выберите фото не меньше 320 × 320 px.");
+    }
+
+    const fullScale = Math.min(1, 1600 / image.naturalWidth, 1200 / image.naturalHeight);
+    const fullCanvas = productImageCanvas(
+      image,
+      Math.max(1, Math.round(image.naturalWidth * fullScale)),
+      Math.max(1, Math.round(image.naturalHeight * fullScale))
+    );
+    const previewCanvas = productImageCanvas(image, 640, 480);
+    const [fullBlob, previewBlob] = await Promise.all([
+      compactProductWebp(fullCanvas, maxStoredProductImageSize, 0.84),
+      compactProductWebp(previewCanvas, maxStoredProductPreviewSize, 0.72)
+    ]);
+    return {
+      image: await blobToDataUrl(fullBlob),
+      thumbnail: await blobToDataUrl(previewBlob),
+      preview: await blobToDataUrl(previewBlob),
+      title: file.name,
+      info: image.naturalWidth + " × " + image.naturalHeight + " px · каталог: " + formatDocumentSize(previewBlob.size) + ", WebP"
+    };
+  }
+
   async function prepareHeroSlide(file) {
     if (!file || !/^image\/(jpeg|png|webp)$/i.test(file.type)) {
       throw new Error("Выберите изображение в формате JPG, PNG или WebP.");
@@ -1267,22 +1353,50 @@
     }
   });
 
+  $("#productImageFile").addEventListener("change", async event => {
+    const file = event.target.files && event.target.files[0];
+    pendingProductImage = null;
+    if (!file) {
+      renderProductImagePreview($("#editId").value ? $("#productImage").value.trim() : "", "", "");
+      return;
+    }
+    const input = event.currentTarget;
+    input.disabled = true;
+    setStatus("#productStatus", "Оптимизируем фото для карточек…", true);
+    try {
+      pendingProductImage = await prepareProductImage(file);
+      renderProductImagePreview(pendingProductImage.preview, pendingProductImage.title, pendingProductImage.info);
+      setStatus("#productStatus", "Фото подготовлено: качественная версия и лёгкое превью для каталога.", true);
+    } catch (error) {
+      input.value = "";
+      pendingProductImage = null;
+      renderProductImagePreview($("#editId").value ? $("#productImage").value.trim() : "", "", "");
+      setStatus("#productStatus", error.message || "Не удалось подготовить изображение.", false);
+    } finally {
+      input.disabled = false;
+    }
+  });
+
   $("#productForm").addEventListener("submit", async event => {
     event.preventDefault();
     const id = $("#editId").value || String(Date.now());
     const index = products.findIndex(product => String(product.id) === String(id));
     const previous = index > -1 ? products[index] : {};
+    const enteredImageUrl = $("#productImage").value.trim();
+    const urlWasChanged = Boolean(enteredImageUrl && enteredImageUrl !== (previous.image || ""));
     const item = {
       ...previous,
       id,
       name: $("#productName").value.trim(),
       brand: $("#productBrand").value.trim(),
       cat: $("#productCategory").value,
-      image: $("#productImage").value.trim(),
+      image: pendingProductImage ? pendingProductImage.image : enteredImageUrl,
+      thumbnail: pendingProductImage ? pendingProductImage.thumbnail : (urlWasChanged ? "" : previous.thumbnail || ""),
       description: $("#productDescription").value.trim(),
       specs: specsFromText($("#productSpecs").value),
       active: $("#productActive").checked
     };
+    if (!item.image && previous.image) item.image = previous.image;
     if (index > -1) products[index] = item;
     else products.unshift(item);
     const saved = await persistAndRefresh("#productStatus", item.active ? "Товар сохранён и опубликован в каталоге." : "Товар сохранён как неактивный.");
