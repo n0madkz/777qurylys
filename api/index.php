@@ -52,7 +52,8 @@ function product_row(array $value): array {
         'badge' => text_value($value['badge'] ?? '', 80) ?: null,
         'sort_order' => (int)($value['sort_order'] ?? 0),
         'is_active' => bool_value($value['active'] ?? $value['is_active'] ?? false),
-        'metadata' => $metadata
+        // Supabase requires metadata to be a JSON object; an empty PHP array encodes as [].
+        'metadata' => json_object_value($metadata)
     ];
 }
 
