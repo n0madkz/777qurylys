@@ -76,6 +76,8 @@
           </div>
           <div class="admin-title__actions">
             <button class="button button--ghost" id="importProductsButton" type="button">Импорт CSV</button>
+            <button class="button button--ghost" id="commerceImportButton" type="button">Импорт из 1С</button>
+            <input id="commerceImportInput" type="file" accept=".xml" multiple hidden>
             <input id="productImportInput" type="file" accept=".csv,text/csv" hidden>
             <button class="button button--primary" id="newProduct" type="button">Добавить товар</button>
           </div>
@@ -243,6 +245,7 @@
   </main>
 
 <script src="request-queue.js?v=20260815-bank-details"></script>
-  <script src="admin.js?v=20260815-bank-details"></script>
+  <script src="admin.js?v=20261110-commerce"></script>
+  <script src="commerce-import.js?v=20261110"></script>
 </body>
 </html>

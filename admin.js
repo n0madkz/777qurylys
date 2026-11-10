@@ -548,7 +548,8 @@
       return '<tr class="' + (active ? "" : "is-inactive") + '"><td class="admin-select-column"><label class="admin-row-select">' +
         '<input type="checkbox" data-select-product="' + escapeHtml(id) + '"' + checked +
         ' aria-label="Выбрать товар: ' + escapeHtml(productName(product)) + '"></label></td><td><b>' +
-        escapeHtml(productName(product)) + '</b><small>' +
+        escapeHtml(productName(product)) + '</b>' + (Array.isArray(product.warehouseStocks)
+          ? product.warehouseStocks.map(stock => '<small>' + escapeHtml(stock.name) + ': ' + escapeHtml(stock.quantity) + ' ' + escapeHtml(product.unit || '') + '</small>').join('') : '') + '<small>' +
         escapeHtml(product.brand || product.manufacturer || "") + "</small></td><td>" +
         escapeHtml(categoryLabel(product.cat)) + '</td><td><label class="admin-status-switch admin-status-switch--row">' +
         '<input type="checkbox" data-active-product="' + escapeHtml(id) + '"' + activeChecked +

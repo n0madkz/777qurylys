@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/_bootstrap.php';
+require __DIR__ . '/commerce-import.php';
 
 function category_row(array $value): array {
     return [
@@ -99,7 +100,12 @@ function get_product_by_id(string $id, bool $publicOnly = true): ?array {
     if ($id === '') return null;
     $query = '?select=*,categories(name)&id=eq.' . rawurlencode($id) . '&limit=1';
     if ($publicOnly) $query .= '&is_active=eq.true';
-    $rows = supabase_json('GET', rest_path('products', $query));
+    $rows = [];
+    for ($offset = 0; ; $offset += 500) {
+        $page = supabase_json('GET', rest_path('products', $query . '&limit=500&offset=' . $offset));
+        $rows = array_merge($rows, $page);
+        if (count($page) < 500) break;
+    }
     return is_array($rows) && isset($rows[0]) && is_array($rows[0]) ? product_client($rows[0]) : null;
 }
 
@@ -445,6 +451,11 @@ try {
         if ($method === 'GET') send_json(['products' => get_products(false), 'settings' => array_merge(get_settings(), ['heroSlides' => get_slides(false)]), 'categories' => get_categories(false)]);
         if ($method === 'PUT') send_json(store_products(request_json()));
         throw new ApiError('Method not allowed', 405);
+    }
+    if ($route === 'admin/commerce-import') {
+        require_method('POST');
+        admin_required();
+        send_json(commerce_import(request_json()));
     }
     if ($route === 'admin/categories') {
         admin_required();
