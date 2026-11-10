@@ -190,8 +190,12 @@ function start_admin_session(): void {
 function admin_required(): void {
     start_admin_session();
     if (empty($_SESSION['qurylys_admin']) || $_SESSION['qurylys_admin'] !== config_value('ADMIN_USER')) {
+        session_write_close();
         throw new ApiError('Требуется вход администратора', 401);
     }
+    // Authentication is read-only. Do not hold the session lock during database
+    // calls: imports otherwise block session checks, reloads and other admin tabs.
+    session_write_close();
 }
 
 function request_files(): array {

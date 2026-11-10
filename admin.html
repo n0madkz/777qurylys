@@ -11,15 +11,25 @@
   <link rel="stylesheet" href="admin-categories.css">
   <link rel="stylesheet" href="admin-requests.css?v=20260811-request-accordion">
   <link rel="stylesheet" href="primary-logo.css?v=20260811-admin-footer-logo">
-  <style>html.admin-auth-pending body { visibility: hidden; }</style>
+  <style>
+    html.admin-auth-pending body { visibility: hidden; }
+    html.admin-auth-pending::after { content: attr(data-auth-message); position: fixed; inset: 35% 20px auto; text-align: center; color: #222; font: 16px/1.6 Arial, sans-serif; }
+  </style>
   <script>
     document.documentElement.classList.add("admin-auth-pending");
-    fetch("/api/admin/session", { credentials: "same-origin", cache: "no-store" })
+    document.documentElement.dataset.authMessage = "Проверяем вход в админку…";
+    const authController = new AbortController();
+    const authTimer = window.setTimeout(() => authController.abort(), 15000);
+    fetch("/api/admin/session", { credentials: "same-origin", cache: "no-store", signal: authController.signal })
       .then(response => {
-        if (!response.ok) window.location.replace("/admin-login.html");
+        if (response.status === 401) window.location.replace("/admin-login.html");
+        else if (!response.ok) throw new Error("Сервер временно недоступен");
         else document.documentElement.classList.remove("admin-auth-pending");
       })
-      .catch(() => window.location.replace("/admin-login.html"));
+      .catch(() => {
+        document.documentElement.dataset.authMessage = "Сервер не ответил вовремя. Импорт ещё может выполняться. Подождите минуту и обновите страницу; повторно импорт не запускайте.";
+      })
+      .finally(() => window.clearTimeout(authTimer));
   </script>
 </head>
 <body class="admin-body">

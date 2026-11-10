@@ -119,10 +119,15 @@ function commerce_import(array $body): array {
     $parsed = commerce_parse((string)($body['catalogXml'] ?? ''), (string)($body['offersXml'] ?? ''));
     $existing = array_column(commerce_all_rows('products'), null, 'id');
     $categories = array_column(commerce_all_rows('categories'), null, 'id');
-    // Parent categories are emitted before their children. Never remove records.
+    // Batch each depth separately so parent foreign keys exist before children.
+    $categoryDepths = []; $categoryBatches = [];
     foreach ($parsed['categories'] as $category) {
-        if (!isset($categories[$category['id']])) batch_upsert('categories', [$category]);
+        $depth = $category['parent_id'] === null ? 0 : ($categoryDepths[$category['parent_id']] ?? 0) + 1;
+        $categoryDepths[$category['id']] = $depth;
+        if (!isset($categories[$category['id']])) $categoryBatches[$depth][] = $category;
     }
+    ksort($categoryBatches);
+    foreach ($categoryBatches as $batch) batch_upsert('categories', $batch);
     $created = 0; $updated = 0; $inserts = [];
     foreach ($parsed['products'] as $product) {
         $id = $product['id'];
