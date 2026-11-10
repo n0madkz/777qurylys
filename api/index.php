@@ -91,9 +91,14 @@ function get_categories(bool $publicOnly = false): array {
 }
 
 function get_products(bool $publicOnly = false): array {
-  $query = '?select=*&order=sort_order.asc,created_at.desc';
+  $query = '?select=*&order=sort_order.asc,created_at.desc,id.asc';
   if ($publicOnly) $query .= '&is_active=eq.true';
-  $rows = supabase_json('GET', rest_path('products', $query));
+  $rows = [];
+  for ($offset = 0; ; $offset += 500) {
+      $page = supabase_json('GET', rest_path('products', $query . '&limit=500&offset=' . $offset));
+      $rows = array_merge($rows, $page);
+      if (count($page) < 500) break;
+  }
   return array_map('product_client', is_array($rows) ? $rows : []);
 }
 
@@ -102,12 +107,7 @@ function get_product_by_id(string $id, bool $publicOnly = true): ?array {
     if ($id === '') return null;
     $query = '?select=*,categories(name)&id=eq.' . rawurlencode($id) . '&limit=1';
     if ($publicOnly) $query .= '&is_active=eq.true';
-    $rows = [];
-    for ($offset = 0; ; $offset += 500) {
-        $page = supabase_json('GET', rest_path('products', $query . '&limit=500&offset=' . $offset));
-        $rows = array_merge($rows, $page);
-        if (count($page) < 500) break;
-    }
+    $rows = supabase_json('GET', rest_path('products', $query));
     return is_array($rows) && isset($rows[0]) && is_array($rows[0]) ? product_client($rows[0]) : null;
 }
 
