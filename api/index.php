@@ -11,7 +11,7 @@ function category_row(array $value): array {
         'translations' => json_object_value($value['translations'] ?? []),
         'icon' => text_value($value['icon'] ?? '', 120) ?: null,
         'sort_order' => (int)($value['sort_order'] ?? 0),
-        'is_active' => bool_value($value['active'] ?? $value['is_active'] ?? true, true)
+        'is_active' => !str_starts_with((string)($value['id'] ?? ''), 'onec-') && bool_value($value['active'] ?? $value['is_active'] ?? true, true)
     ];
 }
 
@@ -85,7 +85,9 @@ function get_categories(bool $publicOnly = false): array {
     $query = '?select=*&order=sort_order.asc,name.asc';
     if ($publicOnly) $query .= '&is_active=eq.true';
     $rows = supabase_json('GET', rest_path('categories', $query));
-    return array_map('category_client', is_array($rows) ? $rows : []);
+    $rows = is_array($rows) ? $rows : [];
+    if ($publicOnly) $rows = array_values(array_filter($rows, fn($row) => !str_starts_with((string)$row['id'], 'onec-')));
+    return array_map('category_client', $rows);
 }
 
 function get_products(bool $publicOnly = false): array {

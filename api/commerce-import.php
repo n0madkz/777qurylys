@@ -63,7 +63,7 @@ function commerce_parse(string $catalogXml, string $offersXml): array {
     $walk = function(SimpleXMLElement $node, ?string $parent = null) use (&$walk, &$categories): void {
         foreach (commerce_nodes($node, 'Группы') as $groups) foreach (commerce_nodes($groups, 'Группа') as $group) {
             $id = 'onec-' . sha1(commerce_text($group, 'Ид'));
-            $categories[$id] = ['id' => $id, 'name' => commerce_text($group, 'Наименование'), 'parent_id' => $parent];
+            $categories[$id] = ['id' => $id, 'name' => commerce_text($group, 'Наименование'), 'parent_id' => $parent, 'is_active' => false];
             $walk($group, $id);
         }
     };
@@ -95,7 +95,7 @@ function commerce_parse(string $catalogXml, string $offersXml): array {
             'sku' => commerce_text($item, 'Артикул') ?: commerce_text($item, 'Код'),
             'description' => commerce_text($item, 'Описание'),
             'specifications' => $specs,
-            'metadata' => ['onec_id' => $id, 'code' => commerce_text($item, 'Код'),
+            'metadata' => ['onec_id' => $id, 'onec_category_id' => $category, 'code' => commerce_text($item, 'Код'),
                 'barcode' => commerce_text($item, 'Штрихкод'), 'unit' => $unit ? (string)$unit['НаименованиеПолное'] : '',
                 'warehouseStocks' => $stocks[$id], 'stockUpdatedAt' => gmdate('c')]
         ];
@@ -133,6 +133,8 @@ function commerce_import(array $body): array {
         $id = $product['id'];
         if (isset($existing[$id])) {
             $old = $existing[$id];
+            // Website categories are curated manually; 1C only updates source metadata.
+            unset($product['category_id']);
             $product['metadata'] = json_object_value(array_merge(json_value($old['metadata'] ?? []), $product['metadata']));
             if (!$product['specifications']) unset($product['specifications']);
             // PATCH leaves active status, images, translations and manual specs intact.

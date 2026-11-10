@@ -266,7 +266,7 @@
   }
 
   function roots() {
-    return categories.filter(category => !category.parent);
+    return categories.filter(category => !category.parent && !category.id.startsWith("onec-"));
   }
 
   function childrenOf(id) {
@@ -307,15 +307,15 @@
 
     const allowed = parentOnly
       ? roots().filter(category => category.id !== excludeId)
-      : categories.filter(category => category.id !== excludeId && (!category.parent || map.has(category.parent)));
+      : categories.filter(category => !category.id.startsWith("onec-") && category.id !== excludeId && (!category.parent || map.has(category.parent)));
 
     return allowed.map(makeOption).join("");
   }
 
   function syncProductCategories(selectedId) {
     const select = $("#productCategory");
-    select.innerHTML = categoryOptions(selectedId);
-    if (!select.value && categories[0]) select.value = categories[0].id;
+    select.innerHTML = '<option value="">Без категории</option>' +
+      (String(selectedId || '').startsWith('onec-') ? '<option selected value="' + escapeHtml(selectedId) + '">Не распределён (из 1С)</option>' : '') + categoryOptions(selectedId);
   }
 
   function syncCategoryParents(selectedId, excludeId) {
@@ -579,14 +579,16 @@
         '<span>Раздел</span></div>' + categoryRow(root, "", rootProducts) + childrenMarkup + "</section>";
     }).join("");
 
-    const orphaned = categories.filter(category => category.parent && !map.has(category.parent));
+    const orphaned = categories.filter(category => !category.id.startsWith("onec-") && category.parent && !map.has(category.parent));
     const orphanedMarkup = orphaned.length
       ? '<section class="category-admin-group"><div class="category-admin-group__title"><span>Другие</span></div>' +
         orphaned.map(category => categoryRow(category, "", categoryProductCount(category.id))).join("") +
         "</section>"
       : "";
 
-    $("#categoriesList").innerHTML = groups + orphanedMarkup || '<div class="admin-note"><b>Категорий пока нет</b></div>';
+    const hiddenCount = categories.filter(category => category.id.startsWith("onec-")).length;
+    $("#categoriesList").innerHTML = (hiddenCount ? '<div class="admin-note">Группы из 1С скрыты (' + hiddenCount + '). Создавайте категории сайта и назначайте их товарам вручную.</div>' : '') +
+      (groups + orphanedMarkup || '<div class="admin-note"><b>Категорий пока нет</b></div>');
   }
 
   function categoryRow(category, parentName, productCount) {
