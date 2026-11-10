@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/commerce-import.php';
+require __DIR__ . '/photo-search.php';
 
 function category_row(array $value): array {
     return [
@@ -68,6 +69,7 @@ function product_client(array $row): array {
         'cat' => (string)($row['category_id'] ?? ''),
         'name' => (string)$row['name'],
         'brand' => (string)($row['brand'] ?? ''),
+        'sku' => (string)($row['sku'] ?? ''),
         'description' => (string)($row['description'] ?? ''),
         'specs' => json_value($row['specifications'] ?? []),
         'image' => storage_source((string)($row['image_path'] ?? ''), 'product-images'),
@@ -458,6 +460,14 @@ try {
         require_method('POST');
         admin_required();
         send_json(commerce_import(request_json()));
+    }
+    if ($route === 'admin/photo-search') {
+        require_method('POST'); admin_required();
+        send_json(photo_search((string)(request_json()['query'] ?? '')));
+    }
+    if ($route === 'admin/photo-download') {
+        require_method('POST'); admin_required();
+        photo_download(request_json());
     }
     if ($route === 'admin/categories') {
         admin_required();

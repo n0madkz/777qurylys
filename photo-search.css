@@ -1,0 +1,10 @@
+.photo-search-actions { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin:12px 0; }
+.photo-search-results { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; }
+.photo-search-card { border:1px solid #dce0df; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px; min-width:0; background:#fff; }
+.photo-search-card img { width:100%; height:160px; object-fit:contain; background:#f7f8f8; }
+.photo-search-card p { margin:0; overflow-wrap:anywhere; }
+.photo-search-card a { overflow-wrap:anywhere; }
+.photo-search-card button { margin-top:auto; min-height:44px; }
+#photoSearchPanel { margin:12px 0; padding:16px; border:1px solid #dce0df; border-radius:12px; }
+#photoSearchPanel a { color:#a63500; text-decoration:underline; }
+#photoSearchPanel :focus-visible { outline:3px solid #f76300; outline-offset:3px; }

@@ -43,6 +43,7 @@
   const maxStoredProductImageSize = 1100 * 1024;
   const maxStoredProductPreviewSize = 150 * 1024;
   let pendingProductImage = null;
+  let pendingPhotoSource = null;
 
   const $ = selector => document.querySelector(selector);
   const escapeHtml = value => String(value == null ? "" : value).replace(/[&<>'"]/g, char => ({
@@ -454,6 +455,9 @@
   }
 
   function openProductForm(product) {
+    document.dispatchEvent(new Event('product-photo-reset'));
+    $('#productForm').dataset.sku = product ? product.sku || product.code || '' : '';
+    pendingPhotoSource = null;
     $("#productForm").hidden = false;
     $("#productFormTitle").textContent = product ? "Редактирование товара" : "Новый товар";
     $("#editId").value = product ? product.id : "";
@@ -477,6 +481,7 @@
   }
 
   function closeProductForm() {
+    document.dispatchEvent(new Event('product-photo-reset'));
     $("#productForm").hidden = true;
   }
 
@@ -1369,6 +1374,7 @@
   });
 
   $("#productImageFile").addEventListener("change", async event => {
+    pendingPhotoSource = null;
     const file = event.target.files && event.target.files[0];
     pendingProductImage = null;
     if (!file) {
@@ -1392,6 +1398,20 @@
     }
   });
 
+  document.addEventListener('product-photo-picked', async event => {
+    const { blob, context, page, resolve, reject } = event.detail;
+    try {
+      const file = new File([blob], 'product-photo', { type: blob.type });
+      const prepared = await prepareProductImage(file);
+      if ($('#productForm').hidden || $('#editId').value + '\n' + $('#productName').value !== context) throw new Error('Карточка товара изменилась. Повторите поиск.');
+      pendingProductImage = prepared;
+      pendingPhotoSource = page;
+      $('#productImageFile').value = '';
+      renderProductImagePreview(prepared.preview, 'Выбранное фото из интернета', prepared.info);
+      resolve();
+    } catch (error) { reject(error); }
+  });
+
   $("#productForm").addEventListener("submit", async event => {
     event.preventDefault();
     const id = $("#editId").value || String(Date.now());
@@ -1411,6 +1431,7 @@
       specs: specsFromText($("#productSpecs").value),
       active: $("#productActive").checked
     };
+    if (pendingPhotoSource) item.imageSource = pendingPhotoSource;
     if (!item.image && previous.image) item.image = previous.image;
     if (index > -1) products[index] = item;
     else products.unshift(item);

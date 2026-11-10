@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="admin.css?v=20260811-admin-logout">
   <link rel="stylesheet" href="admin-categories.css">
   <link rel="stylesheet" href="admin-requests.css?v=20260811-request-accordion">
+  <link rel="stylesheet" href="photo-search.css?v=20261110">
   <link rel="stylesheet" href="primary-logo.css?v=20260811-admin-footer-logo">
   <style>
     html.admin-auth-pending body { visibility: hidden; }
@@ -123,6 +124,14 @@
           <div class="admin-product-status"><b>Статус показа</b><label class="admin-status-switch"><input id="productActive" type="checkbox" checked><span class="admin-status-switch__track" aria-hidden="true"></span><span class="admin-status-switch__label">Активен в каталоге</span></label><small>Неактивный товар сохраняется в админке, но не показывается покупателям.</small></div>
           <div class="product-image-field">
             <b>Фотография товара</b>
+            <button id="findProductPhoto" class="button button--ghost" type="button">Найти фото</button>
+            <section id="photoSearchPanel" hidden aria-label="Поиск фотографии товара">
+              <label>Название, бренд или артикул<input id="photoSearchQuery" type="search" maxlength="350"></label>
+              <div class="photo-search-actions"><button id="runPhotoSearch" class="button button--ghost" type="button">Искать варианты</button><a id="externalPhotoSearch" target="_blank" rel="noopener noreferrer">Открыть поиск картинок</a><button id="closePhotoSearch" type="button" class="table-action">Закрыть</button></div>
+              <p class="form-help">Сверьте модель, размер и комплектацию. Откройте источник и проверьте условия использования фото. Выбранное фото появится в предпросмотре; затем сохраните товар.</p>
+              <p id="photoSearchStatus" role="status" aria-live="polite"></p>
+              <div id="photoSearchResults" class="photo-search-results"></div>
+            </section>
             <label class="product-image-upload" for="productImageFile">
               <input id="productImageFile" type="file" accept="image/jpeg,image/png,image/webp">
               <span class="product-image-upload__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17.5V6.7A2.7 2.7 0 0 1 6.7 4h10.6A2.7 2.7 0 0 1 20 6.7v10.6a2.7 2.7 0 0 1-2.7 2.7H6.7A2.7 2.7 0 0 1 4 17.3Zm4-4.2 2.2 2.2 3.7-4 3.1 3.3M15.7 8.5h.01"/></svg></span>
@@ -255,7 +264,8 @@
   </main>
 
 <script src="request-queue.js?v=20260815-bank-details"></script>
-  <script src="admin.js?v=20261110-manual-categories"></script>
+  <script src="admin.js?v=20261110-photo-search"></script>
   <script src="commerce-import.js?v=20261110"></script>
+  <script src="photo-search.js?v=20261110"></script>
 </body>
 </html>
