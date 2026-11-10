@@ -61,6 +61,9 @@ function product_row(array $value): array {
 
 function product_client(array $row): array {
     $metadata = json_value($row['metadata'] ?? []);
+    if (isset($metadata['warehouseStocks']) && is_array($metadata['warehouseStocks'])) {
+        $metadata['warehouseStocks'] = commerce_visible_stocks($metadata['warehouseStocks']);
+    }
     if (!empty($metadata['thumbnail'])) {
         $metadata['thumbnail'] = storage_source((string)$metadata['thumbnail'], 'product-images');
     }

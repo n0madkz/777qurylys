@@ -1,6 +1,11 @@
 <?php
 declare(strict_types=1);
 
+function commerce_visible_stocks(array $stocks): array {
+    return array_values(array_filter($stocks, fn($stock) => is_array($stock)
+        && (string)($stock['id'] ?? '') !== '8dbb6398-5f47-11f1-aee3-a0ad9f27f6e2'));
+}
+
 // Only explicitly selected fields cross the XML -> database boundary. Prices and
 // the original XML are never persisted, returned, or logged by this importer.
 function commerce_xml(string $xml): SimpleXMLElement {
@@ -48,7 +53,7 @@ function commerce_parse(string $catalogXml, string $offersXml): array {
             $balances[] = ['id' => $wid, 'name' => $warehouses[$wid], 'quantity' => commerce_number((string)$warehouse['КоличествоНаСкладе'])];
         }
         if (!$balances) throw new ApiError('Включите разбивку остатков по складам в 1С', 400);
-        $stocks[$id] = $balances;
+        $stocks[$id] = commerce_visible_stocks($balances);
     }
     $categories = [];
     $properties = [];

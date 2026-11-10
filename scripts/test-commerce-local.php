@@ -6,7 +6,8 @@ $offersPath = $argv[2] ?? 'C:/Users/Aidos/Desktop/offers.xml';
 $result = commerce_parse(file_get_contents($catalogPath), file_get_contents($offersPath));
 if (count($result['products']) !== 1268) throw new Exception('Product count');
 foreach ($result['products'] as $product) {
-    if (count($product['metadata']['warehouseStocks']) !== 2) throw new Exception('Warehouses');
+    if (count($product['metadata']['warehouseStocks']) !== 1) throw new Exception('Warehouses');
+    if ($product['metadata']['warehouseStocks'][0]['name'] !== 'Магазин склад') throw new Exception('Wrong warehouse');
     if (preg_match('/ЦенаЗаЕдиницу|ИдТипаЦены|Валюта/u', json_encode($product, JSON_UNESCAPED_UNICODE))) throw new Exception('Price leak');
 }
 try { commerce_xml('<!DOCTYPE test><test/>'); throw new Exception('DTD accepted'); } catch (ApiError $expected) {}
