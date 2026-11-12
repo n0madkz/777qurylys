@@ -1505,6 +1505,7 @@
       active: $("#productActive").checked
     };
     if (pendingPhotoSource) item.imageSource = pendingPhotoSource;
+    if ((previous.cat || '') !== item.cat) item.category_manual = true;
     if (!item.image && previous.image) item.image = previous.image;
     if (index > -1) products[index] = item;
     else products.unshift(item);

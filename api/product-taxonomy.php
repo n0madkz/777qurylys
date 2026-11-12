@@ -24,6 +24,15 @@ function product_taxonomy_categories(): array {
     $tree['household'][1]['drinks']='Напитки';
     $tree['hand'][1]['tiletools']='Плиткорезы и присоски';
     $tree['household'][1]['gas']='Газовые баллоны и горелки';
+    $tree['plumbing'][1]['pumps']='Насосы и насосные станции';
+    $tree['plumbing'][1]['heating']='Отопление и расширительные баки';
+    $tree['chemicals'][1]['additives']='Добавки для строительных смесей';
+    $tree['hand'][1]['sets']='Наборы ручного инструмента';
+    $tree['hand'][1]['chisels']='Стамески и долота';
+    $tree['electrical'][1]['meters']='Мультиметры и измерители';
+    $tree['materials'][1]['hatches']='Ревизионные люки';
+    $tree['plumbing'][1]['filters']='Фильтры и картриджи для воды';
+    $tree['electrical'][1]['floorheating']='Электрический тёплый пол';
     $rows=[];
     foreach($tree as $root=>[$name,$children]) {
         $rows[]=['id'=>'shop-'.$root,'name'=>$name,'parent_id'=>null,'is_active'=>true];
@@ -39,12 +48,12 @@ function product_taxonomy_match(string $name, string $sourcePath = ''): array {
         'chemicals-sealants'=>'силик\.|нейт.*силик',
         'chemicals-glue'=>'фикс алл|fix.?all|метилан|metylan|фиксатор резьбы',
         'materials-wood'=>'\bosb\b|осб',
-        'materials-profiles'=>'гкл|профил.*(?:стен|маяч|окант)|направля.*(?:стен|потол)|краб.*профил|уголок.*(?:ароч|сетк)',
+        'materials-profiles'=>'гкл|профил.*(?:стен|маяч|окант)|направля.*(?:стен|потол)|краб.*профил|уголок.*(?:ароч|сетк)|(?:теневой|парящий).*профил',
         'materials-insulation'=>'пеноплекс|подложк',
         'materials-floor'=>'галтел|порог|деконика|бордюр.*(?:ванн|идеал)',
         'materials-roof'=>'руберойд|стеклоизол',
         'materials-other'=>'стеклосетк|^бетон$|сетка.*(?:оцинк|плетен)|оцинкован.*лист|провол[ок]+.*оцинк',
-        'materials-waterproof'=>'ondutiss|ветрозащит',
+        'materials-waterproof'=>'ondutiss|ветрозащит|мастика.*кровельн',
         'accessories-abrasives'=>'наждак|шлифовальн.*блок',
         'accessories-welding'=>'электрод',
         'fasteners-hardware'=>'колесо.*(?:креплен|пов[ое]р)|уголок.*креп[её]ж|стусло',
@@ -80,6 +89,52 @@ function product_taxonomy_match(string $name, string $sourcePath = ''): array {
         'household-gas'=>'газ.*бал[ло]+н|горелк'
     ];
     foreach($extra as $id=>$pattern)$priority[$id]=isset($priority[$id])?$priority[$id].'|'.$pattern:$pattern;
+    $refined=[
+        'paint-decor'=>'keramogranit.*(?:жидк|кг)|декоративн.*(?:штукатур|паста)|ш[её]лк.*(?:декоратив|паста)|leonard|леонарад|марсель.*шелк',
+        'paint-primers'=>'\bгрунт\b|\bprimer\b|putzgrund',
+        'paint-solvent'=>'раз[бв]авител',
+        'plumbing-pumps'=>'насос',
+        'plumbing-heating'=>'расширительн.*бак|компл.*алюм.*рад',
+        'plumbing-faucets'=>'гиги[е]?н.*душ|гигинич.*душ',
+        'plumbing-fittings'=>'крестовин|бутылка.*канализ|мост.*(?:deniz|бел|q\d|мм)|арматура.*резб|уголок.*deniz|фильтр.*водопровод|резинка.*(?:кан|переход)',
+        'plumbing-siphons'=>'арматура.*(?:unicorn|нижн|боков)',
+        'materials-insulation'=>'трубка.*изоляцион',
+        'materials-hatches'=>'ревизионн.*люк',
+        'electrical-meters'=>'мультиметр|тестер.*цифров|детектор.*напряж',
+        'electrical-breakers'=>'контактор|реле|щит.*(?:распред|монтаж)|din.?рейка',
+        'electrical-junction'=>'коробка.*(?:установ|распред|развет)|зви|3ви|зв[иi]|ншви|тутк|шина.*соединител',
+        'electrical-floorheating'=>'мат.*нагревательн',
+        'electrical-sockets'=>'рамка.*(?:brite|nizmo|с/у)',
+        'electrical-lighting'=>'патрон.*(?:e27|е27)|\blamp[аa]?\b|sv[-.]|свет-к|угол.*трек|оранжевый патрон',
+        'electrical-cables'=>'провод.*пв-',
+        'hand-pliers'=>'длинногуб|клещи|щипцы',
+        'hand-chisels'=>'стамеск|стамесок|долото|зубил',
+        'hand-screwdrivers'=>'отверток|отвёрток',
+        'hand-sets'=>'набор инструмент',
+        'hand-storage'=>'переноска.*инструмент|сумка.?пояс',
+        'hand-mixers'=>'\bмиксер\b',
+        'hand-clamps'=>'(?:пружинн|быстр).*зажим',
+        'hand-staplers'=>'скобозабив',
+        'hand-tiletools'=>'заусовщик|разламывател.*плит|подстолье.*плит',
+        'materials-floor'=>'набор.*укладк.*ламинат',
+        'materials-other'=>'клинья.*пальчик',
+        'power-other'=>'гравер',
+        'accessories-blades'=>'полотна|насадка.*нож',
+        'accessories-drillbits'=>'сверел|свёрел',
+        'accessories-other'=>'патрон.*дрел|адаптер.*защелка',
+        'fasteners-hardware'=>'шпингалет',
+        'fasteners-nails'=>'скобы.*(?:пистолет|тип-53)',
+        'household-ropes'=>'капронов.*нить',
+        'household-films'=>'нетканый материал',
+        'household-cleaning'=>'губка.*целлюлоз',
+        'safety-eyes'=>'защитн.*очки',
+        'chemicals-additives'=>'противомороз|антимороз',
+        'chemicals-cleaners'=>'гель.*удален',
+        'materials-drymix'=>'sikaceram|ceresit.*(?:се|ce)\s*comfort',
+        'plumbing-filters'=>'магистральный фильтр|картридж.*(?:фильтр|механич)',
+        'plumbing-ventilation'=>'решетка.*d[0-9]'
+    ];
+    foreach($refined as $id=>$pattern)if(preg_match('~'.$pattern.'~iu',$name))return ['id'=>'shop-'.$id,'review'=>false];
     // Keep specific tile-system accessories out of general tool clamps.
     if(preg_match('/клин.*(?:вилка|ворот)|зажим.*(?:трехмер|трёхмер|ворот)/iu',$name))return ['id'=>'shop-materials-other','review'=>false];
     // A foam gun is a tool, even though its name includes "foam".
@@ -170,6 +225,13 @@ function product_taxonomy_match(string $name, string $sourcePath = ''): array {
     ];
     foreach($rules as $id=>$pattern) if(preg_match('/'.$pattern.'/iu',$name)) return ['id'=>'shop-'.$id,'review'=>false];
     $sourceRules=[
+        'plumbing-faucets'=>'смесители',
+        'electrical-lighting'=>'светильники|/\s*лампы\s*/',
+        'electrical-sockets'=>'/\s*(?:рамки|розетки)\s*/',
+        'electrical-junction'=>'/\s*коробка\s*/',
+        'electrical-breakers'=>'/\s*автоматы\s*/',
+        'paint-paint'=>'водоэмульсионная краска|водаэмульсионная краска|/\s*2\.краски\s*/|^7\.краска',
+        'hand-mixers'=>'/\s*1\.миксер',
         'household-drinks'=>'касса товары.*сок',
         'materials-floor'=>'напольный|плинтус',
         'materials-roof'=>'рубероид',

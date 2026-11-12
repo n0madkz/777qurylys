@@ -17,7 +17,7 @@ function supabase_json($method,$path,$payload=null,$headers=[]) {
    $codes=json_decode('['.substr($q['metadata->>code'],4,-1).']',true);
    $rows=array_values(array_filter($rows,fn($row)=>in_array(((array)($row['metadata']??[]))['code']??'', $codes,true)));
   }
-  return json_decode(json_encode(array_slice($rows,(int)($q['offset']??0),500)),true);
+  return json_decode(json_encode(array_slice($rows,(int)($q['offset']??0),(int)($q['limit']??500))),true);
  }
  if($method==='POST') {
   $expected=array_keys($payload[0]);sort($expected);

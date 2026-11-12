@@ -10,7 +10,13 @@ $cases=[
  'Алмазная коронка 25мм'=>'shop-accessories-drillbits',
  'Саморез 3,5*30'=>'shop-fasteners-screws',
  'Уровень алюминиевый'=>'shop-hand-measuring',
- 'Присоска с помпой'=>'shop-hand-tiletools'
+ 'Присоска с помпой'=>'shop-hand-tiletools',
+ 'Keramogranit №101 15кг (жидкий)'=>'shop-paint-decor',
+ 'SikaCeram Standart KZ 25KG'=>'shop-materials-drymix',
+ 'Циркуляционный насос OCEAN'=>'shop-plumbing-pumps',
+ 'Набор сверел по бетону IVT'=>'shop-accessories-drillbits',
+ 'Мат нагревательный Монтаж 1кв м'=>'shop-electrical-floorheating',
+ 'Буровое зубило SDS'=>'shop-hand-chisels'
 ];
 foreach($cases as $name=>$id)if(product_taxonomy_match($name)['id']!==$id)throw new Exception('Wrong category: '.$name);
 $ids=array_column(product_taxonomy_categories(),'id');

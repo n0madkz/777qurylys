@@ -183,7 +183,8 @@ function commerce_apply(array $parsed, int $offset = 0, ?int $limit = null): arr
             // Existing cards belong to the site editor. Import only refreshes
             // source identifiers, units and balances, never editorial fields.
             foreach (['name', 'description', 'specifications', 'brand', 'sku'] as $field) unset($product[$field]);
-            if (!empty($old['category_id']) && !str_starts_with((string)$old['category_id'], 'onec-')) unset($product['category_id']);
+            $oldMeta=json_value($old['metadata']??[]);
+            if(!empty($oldMeta['category_manual']) || (!empty($old['category_id'])&&!str_starts_with((string)$old['category_id'],'onec-')&&!str_starts_with((string)$old['category_id'],'shop-')))unset($product['category_id']);
             $product['metadata'] = json_object_value(array_merge(json_value($old['metadata'] ?? []), $product['metadata']));
             // PATCH also leaves photos, thumbnails, status and translations intact.
             supabase_json('PATCH', rest_path('products', '?id=eq.' . rawurlencode($id)), $product, ['Prefer: return=minimal']);
@@ -324,15 +325,15 @@ function commerce_categorize_step(int $offset): array {
     $updated=0;$review=0;
     foreach($rows as $row){
         $category=(string)($row['category_id']??'');
-        if($category!==''&&!str_starts_with($category,'onec-'))continue;
         $meta=json_value($row['metadata']??[]);
+        if(!empty($meta['category_manual']) || ($category!==''&&!str_starts_with($category,'onec-')&&!str_starts_with($category,'shop-')))continue;
         $path=(string)($meta['onec_category_path']??'');$ancestor=$category;$seen=[];
         while($path===''&&isset($categories[$ancestor])&&!isset($seen[$ancestor])){
             $seen[$ancestor]=true;$path=$categories[$ancestor]['name'];$ancestor=(string)($categories[$ancestor]['parent_id']??'');
             while(isset($categories[$ancestor])&&!isset($seen[$ancestor])){$seen[$ancestor]=true;$path=$categories[$ancestor]['name'].' / '.$path;$ancestor=(string)($categories[$ancestor]['parent_id']??'');}
         }
         $match=product_taxonomy_match((string)$row['name'],$path);
-        $meta['category_review']=$match['review'];$meta['suggested_category']=$match['id'];
+        $meta['category_review']=$match['review'];$meta['suggested_category']=$match['id'];$meta['category_auto']=true;
         supabase_json('PATCH',rest_path('products','?id=eq.'.rawurlencode($row['id'])),['category_id'=>$match['id'],'metadata'=>json_object_value($meta)],['Prefer: return=minimal']);
         $updated++;if($match['review'])$review++;
     }
