@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow, noarchive">
   <title>Админ-панель — 777</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="admin.css?v=20261112-product-photos">
+  <link rel="stylesheet" href="admin.css?v=20261112-news-blocks">
   <link rel="stylesheet" href="admin-categories.css">
   <link rel="stylesheet" href="admin-requests.css?v=20260811-request-accordion">
   <link rel="stylesheet" href="photo-search.css?v=20261110">
@@ -167,7 +167,7 @@
           <label>Тип<select id="newsKind"><option value="news">Новость</option><option value="tips">Полезный совет</option></select></label>
           <label>Заголовок<input id="newsTitle" required maxlength="180"></label>
           <label>Краткое описание<textarea id="newsSummary" maxlength="450" rows="3"></textarea></label>
-          <label>Текст публикации<textarea id="newsBody" required maxlength="40000" rows="14" placeholder="Разделяйте абзацы пустой строкой"></textarea></label>
+          <fieldset class="news-block-editor"><legend>Содержимое публикации</legend><p class="form-help">Чередуйте текст и картинки. Стрелками можно менять порядок блоков.</p><div id="newsBlocks"></div><div class="news-block-add"><button type="button" id="addNewsText" class="button button--ghost">+ Текст</button><button type="button" id="addNewsImage" class="button button--ghost">+ Изображение</button></div></fieldset>
           <label>Обложка<input id="newsImage" type="url" placeholder="https://..."></label>
           <label>Или загрузить обложку<input id="newsImageFile" type="file" accept="image/jpeg,image/png,image/webp"></label>
           <img id="newsImagePreview" alt="Предпросмотр обложки" hidden style="max-width:100%;max-height:240px;object-fit:contain">
@@ -292,7 +292,7 @@
   <script src="admin.js?v=20261112-product-photos"></script>
   <script src="commerce-import.js?v=20261112-chunked-upload"></script>
   <script src="photo-search.js?v=20261110"></script>
-  <script src="news-admin.js?v=20261112"></script>
+  <script src="news-admin.js?v=20261112-content-blocks"></script>
   <script src="taxonomy-admin.js?v=20261112"></script>
 </body>
 </html>

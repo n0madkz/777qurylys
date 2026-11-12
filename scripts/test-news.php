@@ -18,5 +18,21 @@ try {
     if (news_public(news_read())) throw new Exception('Unpublish failed');
     $future=array_merge($edited,['published'=>true,'date'=>gmdate('c',time()+86400)]);
     if(news_public([$future])) throw new Exception('Future post leaked');
+    $mixed=news_save(['title'=>'Статья с иллюстрациями','blocks'=>[
+        ['type'=>'text','text'=>'Первый текст'],
+        ['type'=>'image','src'=>'https://example.com/one.jpg','alt'=>'Первая картинка','caption'=>'Подпись 1'],
+        ['type'=>'text','text'=>'Второй текст'],
+        ['type'=>'image','src'=>'https://example.com/two.jpg','caption'=>'Подпись 2']
+    ]])['post'];
+    if(array_column($mixed['blocks'],'type')!==['text','image','text','image'])throw new Exception('Block order changed');
+    if($mixed['body']!=="Первый текст\n\nВторой текст")throw new Exception('Legacy plain text');
+    $client=news_client($mixed);
+    if($client['blocks'][1]['caption']!=='Подпись 1')throw new Exception('Caption lost');
+    try { news_blocks(['blocks'=>[['type'=>'image','src'=>'javascript:alert(1)']]]);throw new Exception('Unsafe image accepted'); }
+    catch(ApiError $expected){}
+    $reordered=$mixed['blocks'];$reordered=array_reverse($reordered);
+    $saved=news_save(array_merge($mixed,['blocks'=>$reordered]))['post'];
+    if($saved['blocks'][0]['src']!=='https://example.com/two.jpg')throw new Exception('Reorder failed');
     echo "PASS: draft privacy, publish, edit, stale-write protection, unpublish and dates\n";
+    echo "PASS: interleaved text/image blocks, captions, reorder, legacy text and URL validation\n";
 } finally { if(is_file($path))unlink($path); }

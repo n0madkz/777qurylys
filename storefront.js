@@ -69,7 +69,16 @@
         const time=document.createElement('time');time.dateTime=post.date;time.textContent=date(post.date);
         articleMount.append(back,heading,time);
         if(post.image){const image=document.createElement('img');image.src=post.image;image.alt=post.title;image.className='news-article-cover';articleMount.append(image);}
-        for(const text of post.body.split(/\n\s*\n/)){const paragraph=document.createElement('p');paragraph.textContent=text;articleMount.append(paragraph);}
+        const blocks=Array.isArray(post.blocks)?post.blocks:[{type:'text',text:post.body||''}];
+        for(const block of blocks){
+          if(block.type==='text')for(const text of block.text.split(/\n\s*\n/)){const paragraph=document.createElement('p');paragraph.textContent=text;articleMount.append(paragraph);}
+          else if(block.type==='image'){
+            const figure=document.createElement('figure');figure.className='news-inline-image';
+            const image=document.createElement('img');image.src=block.src;image.alt=block.alt||block.caption||'';image.loading='lazy';figure.append(image);
+            if(block.caption){const caption=document.createElement('figcaption');caption.textContent=block.caption;figure.append(caption);}
+            articleMount.append(figure);
+          }
+        }
       }catch(error){articleMount.textContent=error.message;}
       return;
     }

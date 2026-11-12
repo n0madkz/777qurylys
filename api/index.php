@@ -458,13 +458,17 @@ try {
             send_json(['post'=>news_client($matches[0])]);
         }
         $posts = array_slice($posts, 0, max(1, min(1000, (int)($_GET['limit'] ?? 1000))));
-        $posts = array_map(function($post) { unset($post['body'], $post['version']); return news_client($post); }, $posts);
+        $posts = array_map(function($post) { unset($post['body'], $post['blocks'], $post['version']); return news_client($post); }, $posts);
         send_json(['posts'=>$posts]);
     }
     if ($route === 'admin/news') {
         admin_required();
         if ($method === 'GET') send_json(['posts'=>array_map('news_client', news_read())]);
-        if ($method === 'POST') send_json(news_save(request_json()));
+        if ($method === 'POST') {
+            $body=request_json();
+            if(($body['action']??'')==='upload_image')send_json(news_upload_image($body));
+            send_json(news_save($body));
+        }
         throw new ApiError('Method not allowed', 405);
     }
     if ($route === 'catalog') { require_method('GET'); send_json(['products' => get_products(true), 'settings' => get_settings(), 'categories' => get_categories(true)]); }

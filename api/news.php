@@ -20,8 +20,9 @@ function news_public(array $posts): array {
 }
 function news_save(array $body): array {
     $title = text_value($body['title'] ?? '', 180);
-    $content = text_value($body['body'] ?? '', 40000);
-    if ($title === '' || $content === '') throw new ApiError('Заполните заголовок и текст', 400);
+    $blocks = news_blocks($body);
+    $content = implode("\n\n", array_column(array_filter($blocks, fn($block) => $block['type'] === 'text'), 'text'));
+    if ($title === '' || !$blocks) throw new ApiError('Заполните заголовок и добавьте текст или изображение', 400);
     $id = (string)($body['id'] ?? '');
     if ($id !== '' && !preg_match('/^[a-f0-9]{24}$/D', $id)) throw new ApiError('Некорректный ID публикации', 400);
     $image = text_value($body['image'] ?? '', 2200000);
@@ -30,7 +31,7 @@ function news_save(array $body): array {
     $id = $id ?: bin2hex(random_bytes(12));
     $image = persist_image_source(internal_storage_path($image, 'product-images'), 'product-images', 'news/' . $id);
     $post = ['id'=>$id, 'title'=>$title, 'summary'=>text_value($body['summary'] ?? '', 450),
-        'body'=>$content, 'image'=>$image, 'kind'=>($body['kind'] ?? '') === 'tips' ? 'tips' : 'news',
+        'body'=>$content, 'blocks'=>$blocks, 'image'=>$image, 'kind'=>($body['kind'] ?? '') === 'tips' ? 'tips' : 'news',
         'published'=>bool_value($body['published'] ?? false), 'date'=>gmdate('c')];
     $path = news_path();
     $handle = @fopen($path, 'c+');
@@ -55,5 +56,33 @@ function news_save(array $body): array {
 }
 function news_client(array $post): array {
     $post['image'] = storage_source((string)($post['image'] ?? ''), 'product-images');
+    if(isset($post['blocks']))foreach($post['blocks'] as &$block)if($block['type']==='image')$block['src']=storage_source($block['src'],'product-images');
     return $post;
+}
+
+function news_blocks(array $body): array {
+    $input = $body['blocks'] ?? [['type'=>'text','text'=>(string)($body['body'] ?? '')]];
+    if(!is_array($input) || count($input)>60)throw new ApiError('В публикации может быть до 60 блоков',400);
+    $blocks=[];$length=0;
+    foreach($input as $block){
+        if(!is_array($block))throw new ApiError('Некорректный блок',400);
+        if(($block['type']??'')==='text'){
+            $text=text_value($block['text']??'',40000);$length+=strlen($text);
+            if($text!=='')$blocks[]=['type'=>'text','text'=>$text];
+        }elseif(($block['type']??'')==='image'){
+            $src=internal_storage_path(text_value($block['src']??'',3000),'product-images');
+            if($src==='')continue;
+            if(str_starts_with($src,'data:') || (!preg_match('#^(https://|assets/)#',$src)&&!storage_path_valid($src)))throw new ApiError('Загрузите изображение или укажите HTTPS-ссылку',400);
+            $blocks[]=['type'=>'image','src'=>$src,'alt'=>text_value($block['alt']??'',300),'caption'=>text_value($block['caption']??'',500)];
+        }else throw new ApiError('Неизвестный тип блока',400);
+    }
+    if($length>160000)throw new ApiError('Слишком много текста в публикации',400);
+    return $blocks;
+}
+
+function news_upload_image(array $body): array {
+    $source=(string)($body['image']??'');
+    if(!str_starts_with($source,'data:image/'))throw new ApiError('Нужно загруженное изображение',400);
+    $path=persist_image_source($source,'product-images','news/inline-'.bin2hex(random_bytes(12)));
+    return ['ok'=>true,'image'=>storage_source($path,'product-images')];
 }
