@@ -56,6 +56,9 @@
 .admin-content{min-width:0}
 .admin-products-table{min-width:2300px}
 .admin-products-table th{white-space:nowrap}
+.admin-column-sort{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 0;background:transparent;border:0;color:inherit;font:inherit;text-transform:inherit;cursor:pointer;text-align:left}
+.admin-column-sort:hover,.admin-products-table th[aria-sort=ascending],.admin-products-table th[aria-sort=descending]{color:var(--orange)}
+.admin-column-sort:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
 .admin-products-table td{min-width:110px}
 .admin-products-table td:nth-child(3){min-width:240px;max-width:300px}
 .admin-products-table .admin-product-photo{min-width:84px;width:84px;text-align:center}

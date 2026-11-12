@@ -248,6 +248,8 @@
   let requests = JSON.parse(localStorage.getItem("kurylys_admin_requests_cache") || "[]");
   let editingRequestProducts = [];
   let adminProductsPage = 1;
+  let adminSortKey = '';
+  let adminSortDirection = 1;
   const adminPageSize = 30;
   let selectedProductIds = new Set();
 
@@ -498,11 +500,32 @@
   }
 
   function visibleAdminProducts() {
-    const list = filteredAdminProducts();
+    let list = filteredAdminProducts();
+    if(adminSortKey)list=window.AdminProductFields.sortRows(list,productSortValue,adminSortDirection);
     const pages = Math.max(1, Math.ceil(list.length / adminPageSize));
     adminProductsPage = Math.min(adminProductsPage, pages);
     const start = (adminProductsPage - 1) * adminPageSize;
     return { list, pages, visible: list.slice(start, start + adminPageSize) };
+  }
+
+  function productSortValue(product) {
+    const fields=window.AdminProductFields;
+    switch(adminSortKey){
+      case 'photo': return product.thumbnail || product.image ? 1 : 0;
+      case 'name': return productName(product);
+      case 'brand': return product.brand || product.manufacturer || '';
+      case 'unit': case 'sku': case 'barcode': case 'code': return fields.values(fields.field(product,adminSortKey));
+      case 'stocks': {
+        const stocks=fields.visibleStocks(product);
+        return stocks.length?stocks.reduce((sum,stock)=>sum+(Number(stock.quantity)||0),0):null;
+      }
+      case 'description': return product.description || '';
+      case 'specs': return specsToText(product);
+      case 'ids': return productId(product);
+      case 'category': return categoryLabel(product.cat);
+      case 'active': return isProductActive(product)?1:0;
+      default: return '';
+    }
   }
 
   function pruneProductSelection() {
@@ -561,6 +584,12 @@
   }
 
   function drawProducts() {
+    document.querySelectorAll('[data-product-sort]').forEach(button=>{
+      const selected=button.dataset.productSort===adminSortKey;
+      button.closest('th').setAttribute('aria-sort',selected?(adminSortDirection===1?'ascending':'descending'):'none');
+      button.querySelector('span').textContent=selected?(adminSortDirection===1?' ↑':' ↓'):' ↕';
+      button.title='Сортировать: '+button.dataset.label+(selected&&adminSortDirection===1?' по убыванию':' по возрастанию');
+    });
     const { pages, visible } = visibleAdminProducts();
 
     $("#productsTable").innerHTML = visible.map(product => {
@@ -1217,6 +1246,20 @@
       button.disabled = false;
       button.textContent = label;
     }
+  });
+
+  const productSortKeys=['photo','name','brand','sku','barcode','code','unit','stocks','description','specs','ids','category','active'];
+  document.querySelectorAll('.admin-products-table thead th').forEach((heading,index)=>{
+    if(index===0)return;
+    const label=heading.textContent;const button=document.createElement('button');
+    button.type='button';button.className='admin-column-sort';button.dataset.productSort=productSortKeys[index-1];button.dataset.label=label;
+    button.append(document.createTextNode(label));const arrow=document.createElement('span');arrow.setAttribute('aria-hidden','true');arrow.textContent=' ↕';button.append(arrow);
+    button.addEventListener('click',()=>{
+      if(adminSortKey===button.dataset.productSort)adminSortDirection*=-1;
+      else {adminSortKey=button.dataset.productSort;adminSortDirection=1;}
+      adminProductsPage=1;drawProducts();
+    });
+    heading.replaceChildren(button);heading.setAttribute('aria-sort','none');
   });
 
   $("#adminProductSearch").addEventListener("input", () => {

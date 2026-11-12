@@ -14,7 +14,17 @@
       field(product, 'barcode'), field(product, 'code'), product.id, field(product, 'onec_id')]
       .some(value => values(value).toLocaleLowerCase().includes(needle));
   };
-  const api = { field, values, matches, visibleStocks };
+  const collator = new Intl.Collator('ru', {numeric:true,sensitivity:'base'});
+  const sortRows = (rows, valueFor, direction = 1) => rows.map((row,index)=>({row,index,value:valueFor(row)}))
+    .sort((a,b)=>{
+      const empty = value => value === null || value === undefined || String(value).trim() === '';
+      const ae=empty(a.value),be=empty(b.value);
+      if(ae!==be)return ae?1:-1;
+      const comparison=typeof a.value==='number' && typeof b.value==='number'
+        ? a.value-b.value : collator.compare(String(a.value ?? ''),String(b.value ?? ''));
+      return comparison*(direction<0?-1:1)||a.index-b.index;
+    }).map(item=>item.row);
+  const api = { field, values, matches, visibleStocks, sortRows };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.AdminProductFields = api;
 })(typeof window !== 'undefined' ? window : globalThis);

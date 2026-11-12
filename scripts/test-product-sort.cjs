@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');
+const {sortRows}=require('../admin-product-fields.js');
+const rows=[{id:'a',value:100},{id:'b',value:2},{id:'c',value:10},{id:'d',value:null}];
+assert.deepEqual(sortRows(rows,row=>row.value).map(row=>row.id),['b','c','a','d']);
+assert.deepEqual(sortRows(rows,row=>row.value,-1).map(row=>row.id),['a','c','b','d']);
+assert.deepEqual(rows.map(row=>row.id),['a','b','c','d']);
+assert.deepEqual(sortRows([{v:'Товар 10'},{v:'Товар 2'}],row=>row.v).map(row=>row.v),['Товар 2','Товар 10']);
+assert.deepEqual(sortRows([{id:1,v:'same'},{id:2,v:'same'}],row=>row.v,-1).map(row=>row.id),[1,2]);
+assert.deepEqual(sortRows([{v:1},{v:0}],row=>row.v).map(row=>row.v),[0,1]);
+console.log('PASS: numeric/natural sorting, both directions, empty values last, stability, immutable input');
