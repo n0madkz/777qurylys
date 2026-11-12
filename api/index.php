@@ -4,6 +4,7 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/commerce-import.php';
 require __DIR__ . '/photo-search.php';
 require_once __DIR__ . '/product-brands.php';
+require_once __DIR__ . '/exchange.php';
 
 function category_row(array $value): array {
     return [
@@ -433,6 +434,7 @@ function sitemap(): never {
 try {
     $route = trim((string)($_GET['route'] ?? ''), '/');
     $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    if ($route === '1c-exchange') exchange_run();
     if ($route === 'catalog') { require_method('GET'); send_json(['products' => get_products(true), 'settings' => get_settings(), 'categories' => get_categories(true)]); }
     if ($route === 'settings') { require_method('GET'); send_json(['settings' => get_settings()]); }
     if ($route === 'products') { require_method('GET'); send_json(['products' => get_products(true)]); }

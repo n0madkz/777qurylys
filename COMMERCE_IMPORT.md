@@ -1,7 +1,8 @@
 # Импорт каталога 1С
 
 Реализован ручной импорт пары CommerceML 2.08: `import.xml` и `offers.xml`.
-Автоматический обмен из 1С и расписание отправки пока не реализованы.
+Подготовлен также приёмник автоматического обмена: см. ONEC_AUTO_EXCHANGE.md.
+Расписание и доступ настраиваются в 1С и Plesk после контрольного запуска.
 
 На PHP-хостинг загрузить `api/index.php`, `api/commerce-import.php`,
 `admin.html`, `admin.js`, `commerce-import.js`. Нужен PHP 8 с SimpleXML.

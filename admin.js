@@ -547,7 +547,7 @@
     const fields = window.AdminProductFields;
     const cell = (value, className = '') => '<td class="' + className + '">' + escapeHtml(fields.values(value) || '—') + '</td>';
     const longCell = (title, value) => '<td><details class="admin-product-detail"><summary>' + title + '</summary><div>' + escapeHtml(value || '—') + '</div></details></td>';
-    const stocks = fields.field(product, 'warehouseStocks');
+    const stocks = fields.visibleStocks(product);
     const stocksMarkup = Array.isArray(stocks) && stocks.length
       ? stocks.map(stock => '<div>' + escapeHtml(stock.name) + ': <b>' + escapeHtml(stock.quantity) + '</b></div>').join('')
       : '—';

@@ -4,7 +4,8 @@ require_once __DIR__ . '/product-brands.php';
 
 function commerce_visible_stocks(array $stocks): array {
     return array_values(array_filter($stocks, fn($stock) => is_array($stock)
-        && (string)($stock['id'] ?? '') !== '8dbb6398-5f47-11f1-aee3-a0ad9f27f6e2'));
+        && (string)($stock['id'] ?? '') !== '8dbb6398-5f47-11f1-aee3-a0ad9f27f6e2'
+        && !preg_match('/^магазин\s*склад\s*1$/iu', trim((string)($stock['name'] ?? '')))));
 }
 
 // Only explicitly selected fields cross the XML -> database boundary. Prices and
@@ -121,10 +122,12 @@ function commerce_all_rows(string $table): array {
     }
 }
 
-function commerce_import(array $body): array {
+function commerce_import(array $body, int $offset = 0, ?int $limit = null): array {
     // A large initial import may outlive the default PHP request time limit.
     @set_time_limit(300);
     $parsed = commerce_parse((string)($body['catalogXml'] ?? ''), (string)($body['offersXml'] ?? ''));
+    $total = count($parsed['products']);
+    $parsed['products'] = array_slice($parsed['products'], $offset, $limit);
     $existing = array_column(commerce_all_rows('products'), null, 'id');
     $categories = array_column(commerce_all_rows('categories'), null, 'id');
     // Batch each depth separately so parent foreign keys exist before children.
@@ -160,5 +163,5 @@ function commerce_import(array $body): array {
     foreach (array_chunk($inserts, 100) as $batch) {
         supabase_json('POST', rest_path('products', '?on_conflict=id'), $batch, ['Prefer: resolution=ignore-duplicates,return=minimal']);
     }
-    return ['ok' => true, 'created' => $created, 'updated' => $updated];
+    return ['ok' => true, 'created' => $created, 'updated' => $updated, 'next' => $offset + count($parsed['products']), 'total' => $total];
 }

@@ -2,6 +2,7 @@ Options -Indexes
 DirectoryIndex index.html
 
 RewriteEngine On
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
 # Keep links created before the Plesk migration working.
 RewriteRule ^(catalog|about|contacts|services|cart|product|request|admin|admin-login)/?$ /$1.html [R=302,L,NE]

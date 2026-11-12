@@ -24,4 +24,6 @@ $db['products']['manual']=['id'=>'manual','name'=>'Keep'];
 commerce_import($body);
 if(count($db['products'])!==1269 || !$db['products'][$id]['is_active'] || $db['products'][$id]['image_path']!=='keep.webp') throw new Exception('Repeat corrupted data');
 if($db['products'][$id]['category_id']!=='manual-tools') throw new Exception('Manual category overwritten');
+$batch = commerce_import($body, 0, 25);
+if ($batch['next'] !== 25 || $batch['total'] !== 1268 || $batch['updated'] !== 25) throw new Exception('Import batching');
 echo 'PASS: inactive insert, repeat without duplicates, active/image preservation, manual record preserved'.PHP_EOL;
