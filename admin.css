@@ -65,6 +65,9 @@
 .admin-product-detail summary{cursor:pointer;min-height:44px;display:flex;align-items:center;text-decoration:underline}
 .admin-product-detail div{white-space:pre-wrap;overflow-wrap:anywhere;padding:8px 0;max-height:280px;overflow:auto}
 .admin-products-scroll:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
+.admin-product-name{display:block;width:100%;min-height:44px;text-align:left;background:transparent;color:var(--ink,#181d1f);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px;border:0;padding:4px 0}
+.admin-product-name:hover{color:var(--orange)}
+.admin-product-name:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
 body.product-dialog-open{overflow:hidden}
 .admin-product-dialog{width:min(840px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);padding:0;border:1px solid var(--line);border-radius:16px;background:#fff;color:var(--ink,#181d1f);box-shadow:0 24px 80px #0004;overflow:auto;overscroll-behavior:contain}
 .admin-product-dialog::backdrop{background:rgba(16,23,21,.6)}

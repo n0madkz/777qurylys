@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__ . '/product-brands.php';
 
 function commerce_visible_stocks(array $stocks): array {
     return array_values(array_filter($stocks, fn($stock) => is_array($stock)
@@ -104,6 +105,8 @@ function commerce_parse(string $catalogXml, string $offersXml): array {
                 'barcode' => commerce_text($item, 'Штрихкод'), 'unit' => $unit ? (string)$unit['НаименованиеПолное'] : '',
                 'warehouseStocks' => $stocks[$id], 'stockUpdatedAt' => gmdate('c')]
         ];
+        $brand = product_brand_from_name($name);
+        if ($brand !== '') $products[$id]['brand'] = $brand;
     }
     if (!$products || count($products) > 5000 || count($stocks) !== count($products)) throw new ApiError('Нужны согласованные файлы каталога и предложений, до 5000 товаров', 400);
     return ['categories' => array_values($categories), 'products' => array_values($products)];
@@ -138,6 +141,7 @@ function commerce_import(array $body): array {
         $id = $product['id'];
         if (isset($existing[$id])) {
             $old = $existing[$id];
+            if (trim((string)($old['brand'] ?? '')) !== '') unset($product['brand']);
             // Website categories are curated manually; 1C only updates source metadata.
             unset($product['category_id']);
             $product['metadata'] = json_object_value(array_merge(json_value($old['metadata'] ?? []), $product['metadata']));

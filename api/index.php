@@ -3,6 +3,7 @@ declare(strict_types=1);
 require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/commerce-import.php';
 require __DIR__ . '/photo-search.php';
+require_once __DIR__ . '/product-brands.php';
 
 function category_row(array $value): array {
     return [
@@ -71,7 +72,7 @@ function product_client(array $row): array {
         'id' => (string)$row['id'],
         'cat' => (string)($row['category_id'] ?? ''),
         'name' => (string)$row['name'],
-        'brand' => (string)($row['brand'] ?? ''),
+        'brand' => trim((string)($row['brand'] ?? '')) ?: product_brand_from_name((string)$row['name']),
         'sku' => (string)($row['sku'] ?? ''),
         'description' => (string)($row['description'] ?? ''),
         'specs' => json_value($row['specifications'] ?? []),

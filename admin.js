@@ -571,16 +571,14 @@
       const activeChecked = active ? " checked" : "";
       return '<tr class="' + (active ? "" : "is-inactive") + '"><td class="admin-select-column"><label class="admin-row-select">' +
         '<input type="checkbox" data-select-product="' + escapeHtml(id) + '"' + checked +
-        ' aria-label="Выбрать товар: ' + escapeHtml(productName(product)) + '"></label></td><td><b>' +
-        escapeHtml(productName(product)) + '</b></td>' + productDataCells(product) + '<td>' +
+        ' aria-label="Выбрать товар: ' + escapeHtml(productName(product)) + '"></label></td><td><button class="admin-product-name" type="button" data-edit="' + escapeHtml(id) + '">' +
+        escapeHtml(productName(product)) + '</button></td>' + productDataCells(product) + '<td>' +
         escapeHtml(categoryLabel(product.cat)) + '</td><td><label class="admin-status-switch admin-status-switch--row">' +
         '<input type="checkbox" data-active-product="' + escapeHtml(id) + '"' + activeChecked +
         ' aria-label="' + (active ? "Скрыть" : "Показать") + ' товар"><span class="admin-status-switch__track" aria-hidden="true"></span>' +
         '<span class="admin-status-switch__label">' + (active ? "Активен" : "Скрыт") + '</span></label></td><td>' + imageLabel +
-        '</td><td><button class="table-action" type="button" data-edit="' + escapeHtml(id) +
-        '">Изменить</button><button class="table-action danger" type="button" data-delete="' +
-        escapeHtml(id) + '">Удалить</button></td></tr>';
-    }).join("") || '<tr><td colspan="15">Товары не найдены.</td></tr>';
+        '</td></tr>';
+    }).join("") || '<tr><td colspan="14">Товары не найдены.</td></tr>';
 
     $("#adminProductsPagination").innerHTML = pageButtons(adminProductsPage, pages, "admin-page");
     syncBulkProductTools(visible);
