@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow, noarchive">
   <title>Админ-панель — 777</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="admin.css?v=20261112-product-columns">
+  <link rel="stylesheet" href="admin.css?v=20261112-product-dialog">
   <link rel="stylesheet" href="admin-categories.css">
   <link rel="stylesheet" href="admin-requests.css?v=20260811-request-accordion">
   <link rel="stylesheet" href="photo-search.css?v=20261110">
@@ -116,8 +116,9 @@
           </table>
         </div>
         <nav class="admin-pagination" id="adminProductsPagination" aria-label="Страницы товаров"></nav>
+        <dialog id="productDialog" class="admin-product-dialog" aria-labelledby="productFormTitle">
         <form class="admin-form" id="productForm" hidden>
-          <h2 id="productFormTitle">Товар</h2>
+          <div class="admin-product-dialog__header"><h2 id="productFormTitle">Товар</h2><button type="button" id="closeProductDialog" class="admin-product-dialog__close" aria-label="Закрыть карточку товара">×</button></div>
           <input type="hidden" id="editId">
           <label>Название<input id="productName" required autocomplete="off"></label>
           <label>Бренд<input id="productBrand" autocomplete="off"></label>
@@ -152,6 +153,7 @@
           </div>
           <div id="productStatus" class="form-status" role="status"></div>
         </form>
+        </dialog>
       </section>
 
       <section data-panel="categories" hidden>
@@ -266,7 +268,7 @@
 
 <script src="request-queue.js?v=20260815-bank-details"></script>
   <script src="admin-product-fields.js?v=20261112"></script>
-  <script src="admin.js?v=20261112-product-columns"></script>
+  <script src="admin.js?v=20261112-product-dialog"></script>
   <script src="commerce-import.js?v=20261110"></script>
   <script src="photo-search.js?v=20261110"></script>
 </body>

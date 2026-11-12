@@ -477,12 +477,16 @@
     $("#productStatus").className = "form-status";
     $("#productStatus").textContent = "";
     syncProductCategories(product ? product.cat : "materials");
+    if (!$('#productDialog').open) $('#productDialog').showModal();
+    document.body.classList.add('product-dialog-open');
     $("#productName").focus();
   }
 
   function closeProductForm() {
     document.dispatchEvent(new Event('product-photo-reset'));
     $("#productForm").hidden = true;
+    $('#productDialog').close();
+    document.body.classList.remove('product-dialog-open');
   }
 
   function filteredAdminProducts() {
@@ -1109,6 +1113,11 @@
 
   $("#newProduct").addEventListener("click", () => openProductForm(null));
   $("#cancelProduct").addEventListener("click", closeProductForm);
+  $('#closeProductDialog').addEventListener('click', closeProductForm);
+  $('#productDialog').addEventListener('cancel', event => {
+    event.preventDefault();
+    closeProductForm();
+  });
   $("#newCategory").addEventListener("click", () => openCategoryForm(null));
   $("#cancelCategory").addEventListener("click", closeCategoryForm);
   $("#cancelRequest").addEventListener("click", closeRequestForm);
