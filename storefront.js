@@ -14,15 +14,7 @@
     button.setAttribute('aria-controls',menu.id);button.setAttribute('aria-expanded','false');
     let loaded=false;
     function close(){menu.hidden=true;button.setAttribute('aria-expanded','false');}
-    button.addEventListener('click',async event=>{
-      event.preventDefault();event.stopImmediatePropagation();
-      if(!menu.hidden){close();return;}
-      menu.hidden=false;button.setAttribute('aria-expanded','true');
-      if(loaded)return;
-      menu.innerHTML='<p role="status">Загружаем разделы…</p>';
-      try {
-        const response=await fetch('/api/categories',{cache:'no-store'});if(!response.ok)throw new Error();
-        const {categories}=await response.json();if(!Array.isArray(categories))throw new Error();
+    function renderMenu(categories) {
         const map=new Map(categories.map(item=>[item.id,item]));
         function branch(item,trail=new Set()) {
           if(trail.has(item.id))return '';
@@ -34,7 +26,19 @@
         }
         menu.innerHTML='<div class="catalog-dropdown-top"><b>Каталог товаров</b><a href="catalog.html">Все товары →</a></div><div class="catalog-dropdown-grid">'+categories.filter(item=>!item.parent || !map.has(item.parent)).map(item=>'<div>'+branch(item)+'</div>').join('')+'</div>';
         loaded=true;
-      } catch(_) { menu.innerHTML='<p role="alert">Не удалось загрузить категории. <a href="catalog.html">Открыть каталог</a></p>'; }
+    }
+    const cache=window.StoreCategoryCache;
+    if(cache?.data)renderMenu(cache.data);
+    cache?.subscribe(renderMenu);
+    cache?.ready.then(categories=>{
+      if(categories)renderMenu(categories);
+      else if(!loaded)menu.innerHTML='<a href="catalog.html">Открыть весь каталог →</a><p>Список разделов временно недоступен.</p>';
+    });
+    button.addEventListener('click',event=>{
+      event.preventDefault();event.stopImmediatePropagation();
+      if(!menu.hidden){close();return;}
+      menu.hidden=false;button.setAttribute('aria-expanded','true');
+      if(!loaded&&!menu.innerHTML)menu.innerHTML='<a href="catalog.html">Открыть весь каталог →</a><p role="status">Получаем актуальные разделы…</p>';
     },true);
     document.addEventListener('click',event=>{if(!menu.contains(event.target)&&!button.contains(event.target))close();});
     document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!menu.hidden){close();button.focus();}});

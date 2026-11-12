@@ -89,13 +89,24 @@ function product_client(array $row): array {
     return $product;
 }
 
+function category_menu_cache_path(): string {
+    return rtrim(sys_get_temp_dir(), '/\\') . '/777-category-menu-' . hash('sha256', supabase_url()) . '.json';
+}
+
 function get_categories(bool $publicOnly = false): array {
+    $cachePath = $publicOnly ? category_menu_cache_path() : '';
+    if ($publicOnly && is_file($cachePath) && filemtime($cachePath) > time() - 60) {
+        $cached = json_decode((string)@file_get_contents($cachePath), true);
+        if (is_array($cached)) return $cached;
+    }
     $query = '?select=*&order=sort_order.asc,name.asc';
     if ($publicOnly) $query .= '&is_active=eq.true';
     $rows = supabase_json('GET', rest_path('categories', $query));
     $rows = is_array($rows) ? $rows : [];
     if ($publicOnly) $rows = array_values(array_filter($rows, fn($row) => !str_starts_with((string)$row['id'], 'onec-')));
-    return array_map('category_client', $rows);
+    $result = array_map('category_client', $rows);
+    if ($publicOnly) @file_put_contents($cachePath, json_encode($result, JSON_UNESCAPED_UNICODE), LOCK_EX);
+    return $result;
 }
 
 function get_products(bool $publicOnly = false): array {
@@ -239,6 +250,8 @@ function store_categories(array $body): array {
     usort($removed, fn($a, $b) => strlen((string)$b['parent_id']) <=> strlen((string)$a['parent_id']));
     foreach ($removed as $row) delete_by_id('categories', (string)$row['id']);
     if ($categories) batch_upsert('categories', $categories);
+    $cachePath = category_menu_cache_path();
+    if (is_file($cachePath)) @unlink($cachePath);
     return ['ok' => true, 'categories' => get_categories(false)];
 }
 
