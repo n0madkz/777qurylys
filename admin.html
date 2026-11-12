@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow, noarchive">
   <title>Админ-панель — 777</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="admin.css?v=20260811-admin-logout">
+  <link rel="stylesheet" href="admin.css?v=20261112-product-columns">
   <link rel="stylesheet" href="admin-categories.css">
   <link rel="stylesheet" href="admin-requests.css?v=20260811-request-accordion">
   <link rel="stylesheet" href="photo-search.css?v=20261110">
@@ -99,17 +99,18 @@
         </section>
         <div id="productImportStatus" class="form-status" role="status" aria-live="polite"></div>
         <div class="admin-table-tools">
-          <label class="admin-search-label">Поиск по товарам<input id="adminProductSearch" type="search" placeholder="Название или бренд"></label>
+          <label class="admin-search-label">Поиск по товарам<input id="adminProductSearch" type="search" placeholder="Название, бренд, артикул, штрихкод или код" aria-label="Поиск по названию, бренду, артикулу, штрихкоду, коду или ID товара"></label>
         </div>
         <div class="admin-bulk-tools" id="adminBulkTools" hidden>
           <b id="adminSelectedProducts">Выбрано: 0</b>
           <div><button class="table-action" type="button" data-bulk-products="activate">Включить</button><button class="table-action" type="button" data-bulk-products="deactivate">Выключить</button><button class="table-action danger" type="button" data-bulk-products="delete">Удалить выбранные</button></div>
           <div id="productBulkStatus" class="form-status" role="status" aria-live="polite"></div>
         </div>
-        <div class="admin-table-wrap">
-          <table>
+        <p class="form-help">Все поля товаров доступны в таблице. Для просмотра остальных колонок прокрутите таблицу вправо.</p>
+        <div class="admin-table-wrap admin-products-scroll" tabindex="0" role="region" aria-label="Товары: таблица с горизонтальной прокруткой">
+          <table class="admin-products-table">
             <thead>
-              <tr><th class="admin-select-column"><label class="admin-select-all" title="Выбрать все товары на странице"><input id="selectProductsPage" type="checkbox" aria-label="Выбрать все товары на странице"><span>Все</span></label></th><th>Товар</th><th>Категория</th><th>Статус</th><th>Изображение</th><th>Действия</th></tr>
+              <tr><th class="admin-select-column"><label class="admin-select-all" title="Выбрать все товары на странице"><input id="selectProductsPage" type="checkbox" aria-label="Выбрать все товары на странице"><span>Все</span></label></th><th>Товар</th><th>Бренд</th><th>Артикул</th><th>Штрихкод</th><th>Код товара</th><th>Ед. измерения</th><th>Остатки по складам</th><th>Описание</th><th>Характеристики</th><th>Идентификаторы</th><th>Категория</th><th>Статус</th><th>Изображение</th><th>Действия</th></tr>
             </thead>
             <tbody id="productsTable"></tbody>
           </table>
@@ -264,7 +265,8 @@
   </main>
 
 <script src="request-queue.js?v=20260815-bank-details"></script>
-  <script src="admin.js?v=20261110-photo-search"></script>
+  <script src="admin-product-fields.js?v=20261112"></script>
+  <script src="admin.js?v=20261112-product-columns"></script>
   <script src="commerce-import.js?v=20261110"></script>
   <script src="photo-search.js?v=20261110"></script>
 </body>

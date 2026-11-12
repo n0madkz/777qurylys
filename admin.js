@@ -489,9 +489,7 @@
     const query = ($("#adminProductSearch").value || "").trim().toLowerCase();
     if (!query) return products;
     return products.filter(product => {
-      return (productName(product) + " " + (product.brand || product.manufacturer || ""))
-        .toLowerCase()
-        .includes(query);
+      return window.AdminProductFields.matches(product, productName(product), query);
     });
   }
 
@@ -541,6 +539,23 @@
     return markup;
   }
 
+  function productDataCells(product) {
+    const fields = window.AdminProductFields;
+    const cell = (value, className = '') => '<td class="' + className + '">' + escapeHtml(fields.values(value) || '—') + '</td>';
+    const longCell = (title, value) => '<td><details class="admin-product-detail"><summary>' + title + '</summary><div>' + escapeHtml(value || '—') + '</div></details></td>';
+    const stocks = fields.field(product, 'warehouseStocks');
+    const stocksMarkup = Array.isArray(stocks) && stocks.length
+      ? stocks.map(stock => '<div>' + escapeHtml(stock.name) + ': <b>' + escapeHtml(stock.quantity) + '</b></div>').join('')
+      : '—';
+    const updated = fields.field(product, 'stockUpdatedAt');
+    return cell(product.brand || product.manufacturer) + cell(fields.field(product, 'sku'), 'admin-product-code') +
+      cell(fields.field(product, 'barcode'), 'admin-product-code') + cell(fields.field(product, 'code'), 'admin-product-code') +
+      cell(fields.field(product, 'unit')) + '<td class="admin-product-stocks">' + stocksMarkup +
+      (updated ? '<small>Обновлено: ' + escapeHtml(new Date(updated).toLocaleString('ru-RU')) + '</small>' : '') + '</td>' +
+      longCell('Описание', product.description) + longCell('Характеристики', specsToText(product)) +
+      longCell('ID товара / ID 1С', productId(product) + '\n' + fields.values(fields.field(product, 'onec_id')));
+  }
+
   function drawProducts() {
     const { pages, visible } = visibleAdminProducts();
 
@@ -553,9 +568,7 @@
       return '<tr class="' + (active ? "" : "is-inactive") + '"><td class="admin-select-column"><label class="admin-row-select">' +
         '<input type="checkbox" data-select-product="' + escapeHtml(id) + '"' + checked +
         ' aria-label="Выбрать товар: ' + escapeHtml(productName(product)) + '"></label></td><td><b>' +
-        escapeHtml(productName(product)) + '</b>' + (Array.isArray(product.warehouseStocks)
-          ? product.warehouseStocks.map(stock => '<small>' + escapeHtml(stock.name) + ': ' + escapeHtml(stock.quantity) + ' ' + escapeHtml(product.unit || '') + '</small>').join('') : '') + '<small>' +
-        escapeHtml(product.brand || product.manufacturer || "") + "</small></td><td>" +
+        escapeHtml(productName(product)) + '</b></td>' + productDataCells(product) + '<td>' +
         escapeHtml(categoryLabel(product.cat)) + '</td><td><label class="admin-status-switch admin-status-switch--row">' +
         '<input type="checkbox" data-active-product="' + escapeHtml(id) + '"' + activeChecked +
         ' aria-label="' + (active ? "Скрыть" : "Показать") + ' товар"><span class="admin-status-switch__track" aria-hidden="true"></span>' +
@@ -563,7 +576,7 @@
         '</td><td><button class="table-action" type="button" data-edit="' + escapeHtml(id) +
         '">Изменить</button><button class="table-action danger" type="button" data-delete="' +
         escapeHtml(id) + '">Удалить</button></td></tr>';
-    }).join("") || '<tr><td colspan="6">Товары не найдены.</td></tr>';
+    }).join("") || '<tr><td colspan="15">Товары не найдены.</td></tr>';
 
     $("#adminProductsPagination").innerHTML = pageButtons(adminProductsPage, pages, "admin-page");
     syncBulkProductTools(visible);

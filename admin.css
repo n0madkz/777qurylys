@@ -53,6 +53,18 @@
 .admin-note{background:#fff8f2;border-left:3px solid var(--orange);padding:16px 18px;margin-top:20px;font-size:12px}
 .admin-note p{color:var(--muted);margin:7px 0 0}
 .admin-table-wrap{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:12px}
+.admin-content{min-width:0}
+.admin-products-table{min-width:2300px}
+.admin-products-table th{white-space:nowrap}
+.admin-products-table td{min-width:110px}
+.admin-products-table td:nth-child(2){min-width:240px;max-width:300px}
+.admin-products-table .admin-select-column{min-width:44px}
+.admin-products-table .admin-product-code{font-family:Consolas,monospace;white-space:nowrap;font-variant-numeric:tabular-nums}
+.admin-products-table .admin-product-stocks{min-width:210px}
+.admin-product-detail{min-width:150px;max-width:320px}
+.admin-product-detail summary{cursor:pointer;min-height:44px;display:flex;align-items:center;text-decoration:underline}
+.admin-product-detail div{white-space:pre-wrap;overflow-wrap:anywhere;padding:8px 0;max-height:280px;overflow:auto}
+.admin-products-scroll:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th,td{padding:15px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
 th{font-size:10px;text-transform:uppercase;color:var(--muted)}
