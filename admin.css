@@ -57,7 +57,12 @@
 .admin-products-table{min-width:2300px}
 .admin-products-table th{white-space:nowrap}
 .admin-products-table td{min-width:110px}
-.admin-products-table td:nth-child(2){min-width:240px;max-width:300px}
+.admin-products-table td:nth-child(3){min-width:240px;max-width:300px}
+.admin-products-table .admin-product-photo{min-width:84px;width:84px;text-align:center}
+.admin-product-photo-button{display:grid;place-items:center;width:64px;min-height:64px;padding:0;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;overflow:hidden}
+.admin-product-photo-button img{display:block;width:64px;height:64px;object-fit:contain}
+.admin-product-photo-button span{font-size:10px;padding:4px}
+.admin-product-photo-button:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
 .admin-products-table .admin-select-column{min-width:44px}
 .admin-products-table .admin-product-code{font-family:Consolas,monospace;white-space:nowrap;font-variant-numeric:tabular-nums}
 .admin-products-table .admin-product-stocks{min-width:210px}

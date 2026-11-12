@@ -564,20 +564,22 @@
     const { pages, visible } = visibleAdminProducts();
 
     $("#productsTable").innerHTML = visible.map(product => {
-      const imageLabel = product.image ? "Есть" : "Нет";
       const id = productId(product);
+      const imageSource = product.thumbnail || product.image || '';
+      const photoCell = '<td class="admin-product-photo">' + (imageSource
+        ? '<button class="admin-product-photo-button" type="button" data-edit="' + escapeHtml(id) + '" aria-label="Открыть карточку: ' + escapeHtml(productName(product)) + '"><img src="' + escapeHtml(imageSource) + '" alt="' + escapeHtml(productName(product)) + '" width="64" height="64" loading="lazy" decoding="async"><span hidden>Фото недоступно</span></button>'
+        : '<span aria-label="Фотография отсутствует">—</span>') + '</td>';
       const active = isProductActive(product);
       const checked = selectedProductIds.has(id) ? " checked" : "";
       const activeChecked = active ? " checked" : "";
       return '<tr class="' + (active ? "" : "is-inactive") + '"><td class="admin-select-column"><label class="admin-row-select">' +
         '<input type="checkbox" data-select-product="' + escapeHtml(id) + '"' + checked +
-        ' aria-label="Выбрать товар: ' + escapeHtml(productName(product)) + '"></label></td><td><button class="admin-product-name" type="button" data-edit="' + escapeHtml(id) + '">' +
+        ' aria-label="Выбрать товар: ' + escapeHtml(productName(product)) + '"></label></td>' + photoCell + '<td><button class="admin-product-name" type="button" data-edit="' + escapeHtml(id) + '">' +
         escapeHtml(productName(product)) + '</button></td>' + productDataCells(product) + '<td>' +
         escapeHtml(categoryLabel(product.cat)) + '</td><td><label class="admin-status-switch admin-status-switch--row">' +
         '<input type="checkbox" data-active-product="' + escapeHtml(id) + '"' + activeChecked +
         ' aria-label="' + (active ? "Скрыть" : "Показать") + ' товар"><span class="admin-status-switch__track" aria-hidden="true"></span>' +
-        '<span class="admin-status-switch__label">' + (active ? "Активен" : "Скрыт") + '</span></label></td><td>' + imageLabel +
-        '</td></tr>';
+        '<span class="admin-status-switch__label">' + (active ? "Активен" : "Скрыт") + '</span></label></td></tr>';
     }).join("") || '<tr><td colspan="14">Товары не найдены.</td></tr>';
 
     $("#adminProductsPagination").innerHTML = pageButtons(adminProductsPage, pages, "admin-page");
@@ -1256,6 +1258,14 @@
       drawProducts();
     }
   });
+
+  $('#productsTable').addEventListener('error', event => {
+    const image = event.target;
+    if (image.tagName !== 'IMG' || !image.closest('.admin-product-photo-button')) return;
+    image.hidden = true;
+    image.style.display = 'none';
+    image.nextElementSibling.hidden = false;
+  }, true);
 
   $("#productsTable").addEventListener("click", async event => {
     const edit = event.target.closest("[data-edit]");
