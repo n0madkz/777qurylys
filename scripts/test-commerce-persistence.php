@@ -13,7 +13,7 @@ function supabase_json($method,$path,$payload=null,$headers=[]) {
    $ids=json_decode('['.substr($q['id'],4,-1).']',true);
    $rows=array_values(array_filter($rows,fn($row)=>in_array($row['id'],$ids,true)));
   }
-  return array_slice($rows,(int)($q['offset']??0),500);
+  return json_decode(json_encode(array_slice($rows,(int)($q['offset']??0),500)),true);
  }
  if($method==='POST') { foreach($payload as $row) if(!isset($db[$table][$row['id']])) $db[$table][$row['id']]=$row; return []; }
  if($method==='PATCH') { $id=substr($q['id'],3); $db[$table][$id]=array_merge($db[$table][$id],$payload); return []; }
@@ -27,13 +27,28 @@ $id=array_key_first($db['products']);
 if($db['products'][$id]['is_active']!==false) throw new Exception('New active');
 $db['products'][$id]['is_active']=true; $db['products'][$id]['image_path']='keep.webp';
 $db['products'][$id]['category_id']='manual-tools';
+$db['products'][$id]['name']='Название исправлено вручную';
+$db['products'][$id]['description']='Описание добавлено на сайте';
+$db['products'][$id]['specifications']=[['label'=>'Материал','value'=>'Ручное значение']];
+$db['products'][$id]['brand']='Ручной бренд';
+$db['products'][$id]['sku']='MANUAL-SKU';
+$db['products'][$id]['metadata']=(array)$db['products'][$id]['metadata'];
+$db['products'][$id]['metadata']['thumbnail']='keep-preview.webp';
+$db['products'][$id]['metadata']['imageSource']='https://example.com/source';
+$manualFields=array_intersect_key($db['products'][$id],array_flip(['name','description','specifications','brand','sku','category_id','image_path','is_active']));
 foreach($db['categories'] as $category) if($category['is_active']!==false) throw new Exception('Imported category visible');
 $db['products']['manual']=['id'=>'manual','name'=>'Keep'];
 commerce_import($body);
 if(count($db['products'])!==$importedCount+1 || !$db['products'][$id]['is_active'] || $db['products'][$id]['image_path']!=='keep.webp') throw new Exception('Repeat corrupted data');
 if($db['products'][$id]['category_id']!=='manual-tools') throw new Exception('Manual category overwritten');
+foreach($manualFields as $field=>$value) if($db['products'][$id][$field]!==$value) throw new Exception('Manual field overwritten: '.$field);
+$meta=(array)$db['products'][$id]['metadata'];
+if($meta['thumbnail']!=='keep-preview.webp' || $meta['imageSource']!=='https://example.com/source') throw new Exception('Photo metadata overwritten');
 $batch = commerce_import($body, 0, 25);
 if ($batch['next'] !== 25 || $batch['total'] !== $importedCount || $batch['updated'] !== 25) throw new Exception('Import batching');
+foreach($manualFields as $field=>$value) if($db['products'][$id][$field]!==$value) throw new Exception('Batch overwrote manual field: '.$field);
+$meta=(array)$db['products'][$id]['metadata'];
+if($meta['thumbnail']!=='keep-preview.webp') throw new Exception('Batch overwrote preview');
 if (($argv[3] ?? '') === '--staged') {
  $prepared=commerce_admin_import(array_merge($body,['action'=>'prepare']));
  $previous=0;

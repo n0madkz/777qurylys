@@ -153,12 +153,11 @@ function commerce_apply(array $parsed, int $offset = 0, ?int $limit = null): arr
         $id = $product['id'];
         if (isset($existing[$id])) {
             $old = $existing[$id];
-            if (trim((string)($old['brand'] ?? '')) !== '') unset($product['brand']);
-            // Website categories are curated manually; 1C only updates source metadata.
-            unset($product['category_id']);
+            // Existing cards belong to the site editor. Import only refreshes
+            // source identifiers, units and balances, never editorial fields.
+            foreach (['name', 'description', 'specifications', 'brand', 'sku', 'category_id'] as $field) unset($product[$field]);
             $product['metadata'] = json_object_value(array_merge(json_value($old['metadata'] ?? []), $product['metadata']));
-            if (!$product['specifications']) unset($product['specifications']);
-            // PATCH leaves active status, images, translations and manual specs intact.
+            // PATCH also leaves photos, thumbnails, status and translations intact.
             supabase_json('PATCH', rest_path('products', '?id=eq.' . rawurlencode($id)), $product, ['Prefer: return=minimal']);
             $updated++;
         } else {

@@ -13,7 +13,7 @@
       const offers = files.find(file => file.name.toLowerCase() === 'offers.xml');
       if (files.length !== 2 || !catalog || !offers) throw new Error('Выберите вместе import.xml и offers.xml (Ctrl + щелчок).');
       if (files.some(file => file.size > 20 * 1024 * 1024)) throw new Error('Каждый XML должен быть не больше 20 МБ.');
-      if (!window.confirm('Импортировать товары и остатки? Новые товары будут скрыты. Названия, описания, категории и остатки существующих обновятся. Статусы и фото сохранятся. Цены не сохраняются.')) return;
+      if (!window.confirm('Импортировать товары и остатки? Новые товары будут скрыты. У существующих обновятся остатки, коды 1С, штрихкоды и единицы измерения. Названия, описания, характеристики, бренды, артикулы, категории, статусы и фото сохранятся. Цены не сохраняются.')) return;
       status.textContent = 'Импортируем из 1С… Не закрывайте страницу. При ошибке импорт можно повторить.';
       const [catalogXml, offersXml] = await Promise.all([catalog.text(), offers.text()]);
       const request = async body => {
