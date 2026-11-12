@@ -49,8 +49,25 @@ if ($batch['next'] !== 25 || $batch['total'] !== $importedCount || $batch['updat
 foreach($manualFields as $field=>$value) if($db['products'][$id][$field]!==$value) throw new Exception('Batch overwrote manual field: '.$field);
 $meta=(array)$db['products'][$id]['metadata'];
 if($meta['thumbnail']!=='keep-preview.webp') throw new Exception('Batch overwrote preview');
-if (($argv[3] ?? '') === '--staged') {
- $prepared=commerce_admin_import(array_merge($body,['action'=>'prepare']));
+if (in_array($argv[3] ?? '', ['--staged','--chunked'],true)) {
+ if(($argv[3] ?? '')==='--chunked') {
+  $files=['import.xml'=>$body['catalogXml'],'offers.xml'=>$body['offersXml']];
+  $upload=commerce_admin_import(['action'=>'start_upload','sizes'=>array_map('strlen',$files)]);
+  foreach($files as $name=>$xml) {
+   for($offset=0;$offset<strlen($xml);$offset+=131072) {
+    $chunk=substr($xml,$offset,131072);
+    $request=['action'=>'upload_chunk','token'=>$upload['token'],'name'=>$name,'offset'=>$offset,'data'=>base64_encode($chunk)];
+    if(strlen(json_encode($request))>200000)throw new Exception('Upload request too large');
+    $result=commerce_admin_import($request);
+    if($result['next']!==$offset+strlen($chunk))throw new Exception('Chunk offset');
+    if($offset===0)commerce_admin_import($request); // retry must not duplicate bytes
+   }
+  }
+  $prepared=commerce_admin_import(['action'=>'prepare_upload','token'=>$upload['token']]);
+  $again=commerce_admin_import(['action'=>'prepare_upload','token'=>$upload['token']]);
+  if($prepared!==$again)throw new Exception('Finalize replay');
+  echo "PASS: chunked XML upload below 200KB per request, chunk and finalize replay\n";
+ } else $prepared=commerce_admin_import(array_merge($body,['action'=>'prepare']));
  $previous=0;
  do {
   $step=commerce_admin_import(['action'=>'step','token'=>$prepared['token']]);

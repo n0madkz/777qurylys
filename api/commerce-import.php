@@ -179,7 +179,8 @@ function commerce_admin_import(array $body): array {
     // Session ID is available after admin_required releases its write lock.
     $dir = rtrim(sys_get_temp_dir(), '/\\') . '/777-admin-import-' . hash('sha256', session_id());
     if (!is_dir($dir) && !mkdir($dir, 0700, true) && !is_dir($dir)) throw new ApiError('Не удалось создать временную папку импорта', 503);
-    foreach (glob($dir . '/*.json') ?: [] as $file) if (filemtime($file) < time() - 7200) @unlink($file);
+    foreach (glob($dir . '/*') ?: [] as $file) if (is_file($file) && filemtime($file) < time() - 7200) @unlink($file);
+    if (in_array($action, ['start_upload', 'upload_chunk', 'prepare_upload'], true)) return commerce_admin_upload($dir, $body);
     if ($action === 'prepare') {
         $parsed = commerce_parse((string)($body['catalogXml'] ?? ''), (string)($body['offersXml'] ?? ''));
         $token = bin2hex(random_bytes(16));
@@ -199,6 +200,7 @@ function commerce_admin_import(array $body): array {
     if (!$handle || !flock($handle, LOCK_EX | LOCK_NB)) throw new ApiError('Предыдущий шаг ещё выполняется. Подождите.', 409);
     try {
         $state = json_decode(stream_get_contents($handle), true, 512, JSON_THROW_ON_ERROR);
+        if (!isset($state['parsed'])) throw new ApiError('Сначала завершите передачу файлов', 400);
         $total = count($state['parsed']['products']);
         if ($state['next'] < $total) {
             @set_time_limit(60);
@@ -211,5 +213,68 @@ function commerce_admin_import(array $body): array {
             fflush($handle);
         }
         return ['ok' => true, 'next' => $state['next'], 'total' => $total, 'created' => $state['created'], 'updated' => $state['updated'], 'done' => $state['next'] >= $total];
+    } finally { flock($handle, LOCK_UN); fclose($handle); }
+}
+
+function commerce_admin_upload(string $dir, array $body): array {
+    $action = (string)$body['action'];
+    if ($action === 'start_upload') {
+        $sizes = $body['sizes'] ?? [];
+        foreach (['import.xml', 'offers.xml'] as $name) {
+            if (!isset($sizes[$name]) || !is_int($sizes[$name]) || $sizes[$name] < 1 || $sizes[$name] > 20 * 1024 * 1024) throw new ApiError('Нужны оба XML до 20 МБ каждый', 400);
+        }
+        $token = bin2hex(random_bytes(16));
+        $path = $dir . '/' . $token . '.json';
+        if (file_put_contents($path, json_encode(['upload' => $sizes]), LOCK_EX) === false) throw new ApiError('Не удалось начать загрузку', 503);
+        chmod($path, 0600);
+        return ['ok' => true, 'token' => $token];
+    }
+    $token = (string)($body['token'] ?? '');
+    if (!preg_match('/^[a-f0-9]{32}$/D', $token)) throw new ApiError('Некорректный идентификатор загрузки', 400);
+    $path = $dir . '/' . $token . '.json';
+    if (!is_file($path)) throw new ApiError('Загрузка истекла. Выберите файлы заново.', 410);
+    $handle = fopen($path, 'r+');
+    if (!$handle || !flock($handle, LOCK_EX | LOCK_NB)) throw new ApiError('Предыдущий шаг ещё выполняется', 409);
+    try {
+        $state = json_decode(stream_get_contents($handle), true, 512, JSON_THROW_ON_ERROR);
+        // Finalize can be safely retried after the XML has already been parsed.
+        if ($action === 'prepare_upload' && isset($state['parsed'])) return ['ok'=>true,'token'=>$token,'total'=>count($state['parsed']['products'])];
+        if (!isset($state['upload'])) throw new ApiError('Загрузка уже завершена', 409);
+        if ($action === 'upload_chunk') {
+            $name = (string)($body['name'] ?? '');
+            if (!in_array($name, ['import.xml', 'offers.xml'], true)) throw new ApiError('Некорректное имя XML', 400);
+            $offset = $body['offset'] ?? -1;
+            $data = (string)($body['data'] ?? '');
+            if (!is_int($offset) || $offset < 0 || strlen($data) > 262144) throw new ApiError('Некорректная часть файла', 400);
+            $bytes = base64_decode($data, true);
+            if ($bytes === false || $bytes === '' || strlen($bytes) > 196608 || $offset + strlen($bytes) > $state['upload'][$name]) throw new ApiError('Некорректный размер части XML', 400);
+            $part = $dir . '/' . $token . '.' . $name . '.part';
+            clearstatcache(true, $part);
+            $size = is_file($part) ? filesize($part) : 0;
+            if ($size === $offset) {
+                if (file_put_contents($part, $bytes, FILE_APPEND | LOCK_EX) !== strlen($bytes)) throw new ApiError('Не удалось записать XML', 503);
+                chmod($part, 0600);
+            } elseif ($size < $offset + strlen($bytes) || file_get_contents($part, false, null, $offset, strlen($bytes)) !== $bytes) {
+                throw new ApiError('Нарушен порядок частей XML. Повторите загрузку.', 409);
+            }
+            touch($path);
+            return ['ok'=>true, 'next'=>$offset + strlen($bytes)];
+        }
+        $xml = [];
+        foreach (['import.xml', 'offers.xml'] as $name) {
+            $part = $dir . '/' . $token . '.' . $name . '.part';
+            clearstatcache(true, $part);
+            if (!is_file($part) || filesize($part) !== $state['upload'][$name]) throw new ApiError('XML передан не полностью', 400);
+            $xml[$name] = file_get_contents($part);
+        }
+        $parsed = commerce_parse($xml['import.xml'], $xml['offers.xml']);
+        $encoded = json_encode(['parsed'=>$parsed,'next'=>0,'created'=>0,'updated'=>0], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        rewind($handle);
+        if (fwrite($handle, $encoded) !== strlen($encoded) || !ftruncate($handle, strlen($encoded))) throw new ApiError('Не удалось подготовить импорт', 503);
+        fflush($handle);
+        // Original XML (including price blocks) exists only while assembling the
+        // upload in private temp storage. Keep only parsed non-price fields.
+        foreach (['import.xml','offers.xml'] as $name) unlink($dir . '/' . $token . '.' . $name . '.part');
+        return ['ok'=>true,'token'=>$token,'total'=>count($parsed['products'])];
     } finally { flock($handle, LOCK_UN); fclose($handle); }
 }
