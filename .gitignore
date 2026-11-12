@@ -13,3 +13,6 @@ supabase/.temp/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Local catalogue review (source business data, not deployment code)
+/reports/product-categories.csv

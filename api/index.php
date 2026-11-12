@@ -499,6 +499,10 @@ try {
         admin_required();
         send_json(commerce_admin_import(request_json()));
     }
+    if ($route === 'admin/categorize') {
+        require_method('POST');admin_required();
+        $body=request_json();send_json(commerce_categorize_step((int)($body['offset']??0)));
+    }
     if ($route === 'admin/photo-search') {
         require_method('POST'); admin_required();
         send_json(photo_search((string)(request_json()['query'] ?? '')));

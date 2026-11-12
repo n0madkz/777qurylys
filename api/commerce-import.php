@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/product-brands.php';
+require_once __DIR__ . '/product-taxonomy.php';
 
 function commerce_visible_stocks(array $stocks): array {
     return array_values(array_filter($stocks, fn($stock) => is_array($stock)
@@ -75,7 +76,7 @@ function commerce_parse(string $catalogXml, string $offersXml): array {
         }
     };
     foreach ($catalog->xpath('//*[local-name()="Классификатор"]') ?: [] as $classifier) $walk($classifier);
-    $products = [];
+    $products = []; $seenCodes = [];
     foreach ($catalog->xpath('//*[local-name()="Товар"]') ?: [] as $item) {
         $id = commerce_text($item, 'Ид');
         $name = commerce_text($item, 'Наименование');
@@ -84,6 +85,17 @@ function commerce_parse(string $catalogXml, string $offersXml): array {
         $groups = commerce_nodes($item, 'Группы');
         $category = $groups ? 'onec-' . sha1(commerce_text($groups[0], 'Ид')) : null;
         if ($category !== null && !isset($categories[$category])) $category = null;
+        $sourceCategory = $category;
+        $sourcePath = ''; $ancestor = $category; $trail = [];
+        while ($ancestor !== null && isset($categories[$ancestor]) && !isset($trail[$ancestor])) {
+            $trail[$ancestor] = true; $sourcePath = $categories[$ancestor]['name'] . ' / ' . $sourcePath;
+            $ancestor = $categories[$ancestor]['parent_id'];
+        }
+        $assigned = product_taxonomy_match($name, $sourcePath);
+        $category = $assigned['id'];
+        $code = commerce_text($item, 'Код');
+        if ($code === '' || isset($seenCodes[$code])) throw new ApiError('Пустой или повторяющийся код товара 1С: ' . $code, 400);
+        $seenCodes[$code] = true;
         $unit = commerce_nodes($item, 'БазоваяЕдиница')[0] ?? null;
         $specs = [];
         foreach ($item->xpath('./*[local-name()="ЗначенияСвойств"]/*[local-name()="ЗначенияСвойства"]') ?: [] as $property) {
@@ -99,18 +111,18 @@ function commerce_parse(string $catalogXml, string $offersXml): array {
         }
         $products[$id] = [
             'id' => 'onec-' . $id, 'name' => $name, 'category_id' => $category,
-            'sku' => commerce_text($item, 'Артикул') ?: commerce_text($item, 'Код'),
+            'sku' => commerce_text($item, 'Артикул') ?: $code,
+            'brand' => product_brand_from_name($name),
             'description' => commerce_text($item, 'Описание'),
             'specifications' => $specs,
-            'metadata' => ['onec_id' => $id, 'onec_category_id' => $category, 'code' => commerce_text($item, 'Код'),
+            'metadata' => ['onec_id' => $id, 'onec_category_id' => $sourceCategory, 'code' => $code,
+                'onec_category_path' => $sourcePath, 'suggested_category' => $category, 'category_review' => $assigned['review'],
                 'barcode' => commerce_text($item, 'Штрихкод'), 'unit' => $unit ? (string)$unit['НаименованиеПолное'] : '',
                 'warehouseStocks' => $stocks[$id], 'stockUpdatedAt' => gmdate('c')]
         ];
-        $brand = product_brand_from_name($name);
-        if ($brand !== '') $products[$id]['brand'] = $brand;
     }
     if (!$products || count($products) > 5000 || count($stocks) !== count($products)) throw new ApiError('Нужны согласованные файлы каталога и предложений, до 5000 товаров', 400);
-    return ['categories' => array_values($categories), 'products' => array_values($products)];
+    return ['categories' => array_merge(array_values($categories), product_taxonomy_categories()), 'products' => array_values($products)];
 }
 
 function commerce_all_rows(string $table): array {
@@ -135,8 +147,20 @@ function commerce_apply(array $parsed, int $offset = 0, ?int $limit = null): arr
     if ($limit !== null && $parsed['products']) {
         $ids = implode(',', array_map(fn($row) => json_encode($row['id'], JSON_THROW_ON_ERROR), $parsed['products']));
         $existingRows = supabase_json('GET', rest_path('products', '?select=*&id=in.' . rawurlencode('(' . $ids . ')')));
+        $codes = implode(',', array_map(fn($row) => json_encode($row['metadata']['code'], JSON_THROW_ON_ERROR), $parsed['products']));
+        $byCodeRows = supabase_json('GET', rest_path('products', '?' . http_build_query(['select'=>'*','metadata->>code'=>'in.(' . $codes . ')'])));
+        $existingRows = array_values(array_column(array_merge($existingRows, $byCodeRows), null, 'id'));
     } else $existingRows = commerce_all_rows('products');
     $existing = array_column($existingRows, null, 'id');
+    $existingByCode = [];
+    foreach ($existingRows as $row) {
+        $source = json_value($row['metadata'] ?? []);
+        if (!str_starts_with((string)$row['id'], 'onec-') && empty($source['onec_id'])) continue;
+        $code = (string)($source['code'] ?? '');
+        if ($code === '') continue;
+        if (isset($existingByCode[$code]) && $existingByCode[$code]['id'] !== $row['id']) throw new ApiError('В базе несколько товаров с кодом 1С ' . $code . '. Требуется проверка дублей.', 409);
+        $existingByCode[$code] = $row;
+    }
     $categories = $offset === 0 ? array_column(commerce_all_rows('categories'), null, 'id') : [];
     if ($offset !== 0) $parsed['categories'] = [];
     // Batch each depth separately so parent foreign keys exist before children.
@@ -151,16 +175,21 @@ function commerce_apply(array $parsed, int $offset = 0, ?int $limit = null): arr
     $created = 0; $updated = 0; $inserts = [];
     foreach ($parsed['products'] as $product) {
         $id = $product['id'];
-        if (isset($existing[$id])) {
-            $old = $existing[$id];
+        $code = (string)$product['metadata']['code'];
+        $old = $existingByCode[$code] ?? $existing[$id] ?? null;
+        if (isset($existing[$id]) && isset($existingByCode[$code]) && $existingByCode[$code]['id'] !== $id) throw new ApiError('Конфликт ID и кода 1С ' . $code, 409);
+        if ($old !== null) {
+            $id = (string)$old['id']; $product['id'] = $id;
             // Existing cards belong to the site editor. Import only refreshes
             // source identifiers, units and balances, never editorial fields.
-            foreach (['name', 'description', 'specifications', 'brand', 'sku', 'category_id'] as $field) unset($product[$field]);
+            foreach (['name', 'description', 'specifications', 'brand', 'sku'] as $field) unset($product[$field]);
+            if (!empty($old['category_id']) && !str_starts_with((string)$old['category_id'], 'onec-')) unset($product['category_id']);
             $product['metadata'] = json_object_value(array_merge(json_value($old['metadata'] ?? []), $product['metadata']));
             // PATCH also leaves photos, thumbnails, status and translations intact.
             supabase_json('PATCH', rest_path('products', '?id=eq.' . rawurlencode($id)), $product, ['Prefer: return=minimal']);
             $updated++;
         } else {
+            $product['brand'] = $product['brand'] ?? '';
             $product['metadata'] = json_object_value($product['metadata']);
             $product['is_active'] = false;
             // Ignore an insert conflict so a concurrent import cannot reset activation.
@@ -277,4 +306,35 @@ function commerce_admin_upload(string $dir, array $body): array {
         foreach (['import.xml','offers.xml'] as $name) unlink($dir . '/' . $token . '.' . $name . '.part');
         return ['ok'=>true,'token'=>$token,'total'=>count($parsed['products'])];
     } finally { flock($handle, LOCK_UN); fclose($handle); }
+}
+
+function commerce_categorize_step(int $offset): array {
+    if($offset < 0)throw new ApiError('Некорректный шаг',400);
+    $categories=array_column(commerce_all_rows('categories'),null,'id');
+    if($offset===0){
+        $roots=[];$children=[];
+        foreach(product_taxonomy_categories() as $row)if(!isset($categories[$row['id']])){
+            if($row['parent_id']===null)$roots[]=$row;else $children[]=$row;
+        }
+        if($roots)batch_upsert('categories',$roots);
+        if($children)batch_upsert('categories',$children);
+        if(function_exists('category_menu_cache_path')){ $cache=category_menu_cache_path();if(is_file($cache))@unlink($cache); }
+    }
+    $rows=supabase_json('GET',rest_path('products','?select=id,name,category_id,metadata&order=id.asc&limit=25&offset='.$offset));
+    $updated=0;$review=0;
+    foreach($rows as $row){
+        $category=(string)($row['category_id']??'');
+        if($category!==''&&!str_starts_with($category,'onec-'))continue;
+        $meta=json_value($row['metadata']??[]);
+        $path=(string)($meta['onec_category_path']??'');$ancestor=$category;$seen=[];
+        while($path===''&&isset($categories[$ancestor])&&!isset($seen[$ancestor])){
+            $seen[$ancestor]=true;$path=$categories[$ancestor]['name'];$ancestor=(string)($categories[$ancestor]['parent_id']??'');
+            while(isset($categories[$ancestor])&&!isset($seen[$ancestor])){$seen[$ancestor]=true;$path=$categories[$ancestor]['name'].' / '.$path;$ancestor=(string)($categories[$ancestor]['parent_id']??'');}
+        }
+        $match=product_taxonomy_match((string)$row['name'],$path);
+        $meta['category_review']=$match['review'];$meta['suggested_category']=$match['id'];
+        supabase_json('PATCH',rest_path('products','?id=eq.'.rawurlencode($row['id'])),['category_id'=>$match['id'],'metadata'=>json_object_value($meta)],['Prefer: return=minimal']);
+        $updated++;if($match['review'])$review++;
+    }
+    return ['ok'=>true,'next'=>$offset+count($rows),'done'=>count($rows)<25,'updated'=>$updated,'review'=>$review];
 }

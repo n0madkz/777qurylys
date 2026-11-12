@@ -182,10 +182,11 @@
             <p class="eyebrow"><span class="eyebrow__line"></span>Структура каталога</p>
             <h1>Категории</h1>
           </div>
-          <button class="button button--primary" id="newCategory" type="button">Создать категорию</button>
+          <div class="admin-title__actions"><button class="button button--ghost" id="autoCategorize" type="button">Распределить товары</button><button class="button button--primary" id="newCategory" type="button">Создать категорию</button></div>
         </div>
         <p class="admin-intro">Вложенная категория отображается внутри выбранного раздела. Например: «Стройматериалы → Сухие смеси».</p>
         <div class="categories-admin-list" id="categoriesList"></div>
+        <div id="autoCategoryStatus" class="form-status" role="status" aria-live="polite"></div>
         <form class="admin-form" id="categoryForm" hidden>
           <h2 id="categoryFormTitle">Новая категория</h2>
           <input type="hidden" id="categoryEditId">
@@ -292,5 +293,6 @@
   <script src="commerce-import.js?v=20261112-chunked-upload"></script>
   <script src="photo-search.js?v=20261110"></script>
   <script src="news-admin.js?v=20261112"></script>
+  <script src="taxonomy-admin.js?v=20261112"></script>
 </body>
 </html>

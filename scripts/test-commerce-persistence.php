@@ -13,9 +13,17 @@ function supabase_json($method,$path,$payload=null,$headers=[]) {
    $ids=json_decode('['.substr($q['id'],4,-1).']',true);
    $rows=array_values(array_filter($rows,fn($row)=>in_array($row['id'],$ids,true)));
   }
+  if(isset($q['metadata->>code'])) {
+   $codes=json_decode('['.substr($q['metadata->>code'],4,-1).']',true);
+   $rows=array_values(array_filter($rows,fn($row)=>in_array(((array)($row['metadata']??[]))['code']??'', $codes,true)));
+  }
   return json_decode(json_encode(array_slice($rows,(int)($q['offset']??0),500)),true);
  }
- if($method==='POST') { foreach($payload as $row) if(!isset($db[$table][$row['id']])) $db[$table][$row['id']]=$row; return []; }
+ if($method==='POST') {
+  $expected=array_keys($payload[0]);sort($expected);
+  foreach($payload as $row){$keys=array_keys($row);sort($keys);if($keys!==$expected)throw new Exception('All object keys must match');}
+  foreach($payload as $row) if(!isset($db[$table][$row['id']])) $db[$table][$row['id']]=$row; return [];
+ }
  if($method==='PATCH') { $id=substr($q['id'],3); $db[$table][$id]=array_merge($db[$table][$id],$payload); return []; }
  throw new Exception('Unexpected mutation');
 }
@@ -36,7 +44,7 @@ $db['products'][$id]['metadata']=(array)$db['products'][$id]['metadata'];
 $db['products'][$id]['metadata']['thumbnail']='keep-preview.webp';
 $db['products'][$id]['metadata']['imageSource']='https://example.com/source';
 $manualFields=array_intersect_key($db['products'][$id],array_flip(['name','description','specifications','brand','sku','category_id','image_path','is_active']));
-foreach($db['categories'] as $category) if($category['is_active']!==false) throw new Exception('Imported category visible');
+foreach($db['categories'] as $category) if(str_starts_with($category['id'],'onec-') && $category['is_active']!==false) throw new Exception('Imported category visible');
 $db['products']['manual']=['id'=>'manual','name'=>'Keep'];
 commerce_import($body);
 if(count($db['products'])!==$importedCount+1 || !$db['products'][$id]['is_active'] || $db['products'][$id]['image_path']!=='keep.webp') throw new Exception('Repeat corrupted data');
@@ -49,6 +57,13 @@ if ($batch['next'] !== 25 || $batch['total'] !== $importedCount || $batch['updat
 foreach($manualFields as $field=>$value) if($db['products'][$id][$field]!==$value) throw new Exception('Batch overwrote manual field: '.$field);
 $meta=(array)$db['products'][$id]['metadata'];
 if($meta['thumbnail']!=='keep-preview.webp') throw new Exception('Batch overwrote preview');
+$parsed=commerce_parse($body['catalogXml'],$body['offersXml']);
+$changed=$parsed['products'][0];$changed['id']='onec-changed-guid';$changed['metadata']['onec_id']='changed-guid';
+$countBefore=count($db['products']);
+commerce_apply(['products'=>[$changed],'categories'=>[]],0,25);
+if(count($db['products'])!==$countBefore || isset($db['products']['onec-changed-guid']))throw new Exception('Code match created duplicate after GUID change');
+if(((array)$db['products'][$id]['metadata'])['onec_id']!=='changed-guid' || $db['products'][$id]['image_path']!=='keep.webp')throw new Exception('Code match lost card data');
+echo "PASS: changed 1C GUID matches existing card by product code\n";
 if (in_array($argv[3] ?? '', ['--staged','--chunked'],true)) {
  if(($argv[3] ?? '')==='--chunked') {
   $files=['import.xml'=>$body['catalogXml'],'offers.xml'=>$body['offersXml']];
