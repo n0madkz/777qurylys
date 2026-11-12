@@ -465,7 +465,7 @@ try {
     if ($route === 'admin/commerce-import') {
         require_method('POST');
         admin_required();
-        send_json(commerce_import(request_json()));
+        send_json(commerce_admin_import(request_json()));
     }
     if ($route === 'admin/photo-search') {
         require_method('POST'); admin_required();

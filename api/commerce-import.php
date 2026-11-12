@@ -126,10 +126,19 @@ function commerce_import(array $body, int $offset = 0, ?int $limit = null): arra
     // A large initial import may outlive the default PHP request time limit.
     @set_time_limit(300);
     $parsed = commerce_parse((string)($body['catalogXml'] ?? ''), (string)($body['offersXml'] ?? ''));
+    return commerce_apply($parsed, $offset, $limit);
+}
+
+function commerce_apply(array $parsed, int $offset = 0, ?int $limit = null): array {
     $total = count($parsed['products']);
     $parsed['products'] = array_slice($parsed['products'], $offset, $limit);
-    $existing = array_column(commerce_all_rows('products'), null, 'id');
-    $categories = array_column(commerce_all_rows('categories'), null, 'id');
+    if ($limit !== null && $parsed['products']) {
+        $ids = implode(',', array_map(fn($row) => json_encode($row['id'], JSON_THROW_ON_ERROR), $parsed['products']));
+        $existingRows = supabase_json('GET', rest_path('products', '?select=*&id=in.' . rawurlencode('(' . $ids . ')')));
+    } else $existingRows = commerce_all_rows('products');
+    $existing = array_column($existingRows, null, 'id');
+    $categories = $offset === 0 ? array_column(commerce_all_rows('categories'), null, 'id') : [];
+    if ($offset !== 0) $parsed['categories'] = [];
     // Batch each depth separately so parent foreign keys exist before children.
     $categoryDepths = []; $categoryBatches = [];
     foreach ($parsed['categories'] as $category) {
@@ -164,4 +173,44 @@ function commerce_import(array $body, int $offset = 0, ?int $limit = null): arra
         supabase_json('POST', rest_path('products', '?on_conflict=id'), $batch, ['Prefer: resolution=ignore-duplicates,return=minimal']);
     }
     return ['ok' => true, 'created' => $created, 'updated' => $updated, 'next' => $offset + count($parsed['products']), 'total' => $total];
+}
+
+function commerce_admin_import(array $body): array {
+    $action = (string)($body['action'] ?? '');
+    // Session ID is available after admin_required releases its write lock.
+    $dir = rtrim(sys_get_temp_dir(), '/\\') . '/777-admin-import-' . hash('sha256', session_id());
+    if (!is_dir($dir) && !mkdir($dir, 0700, true) && !is_dir($dir)) throw new ApiError('Не удалось создать временную папку импорта', 503);
+    foreach (glob($dir . '/*.json') ?: [] as $file) if (filemtime($file) < time() - 7200) @unlink($file);
+    if ($action === 'prepare') {
+        $parsed = commerce_parse((string)($body['catalogXml'] ?? ''), (string)($body['offersXml'] ?? ''));
+        $token = bin2hex(random_bytes(16));
+        $state = ['parsed' => $parsed, 'next' => 0, 'created' => 0, 'updated' => 0];
+        // Store only allowlisted parsed fields; no prices or original XML.
+        $path = $dir . '/' . $token . '.json';
+        if (file_put_contents($path, json_encode($state, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR), LOCK_EX) === false) throw new ApiError('Не удалось подготовить импорт', 503);
+        chmod($path, 0600);
+        return ['ok' => true, 'token' => $token, 'total' => count($parsed['products'])];
+    }
+    if ($action !== 'step') throw new ApiError('Обновите страницу админки перед импортом', 400);
+    $token = (string)($body['token'] ?? '');
+    if (!preg_match('/^[a-f0-9]{32}$/D', $token)) throw new ApiError('Некорректный идентификатор импорта', 400);
+    $path = $dir . '/' . $token . '.json';
+    if (!is_file($path)) throw new ApiError('Подготовленный импорт истёк. Выберите файлы заново.', 410);
+    $handle = fopen($path, 'r+');
+    if (!$handle || !flock($handle, LOCK_EX | LOCK_NB)) throw new ApiError('Предыдущий шаг ещё выполняется. Подождите.', 409);
+    try {
+        $state = json_decode(stream_get_contents($handle), true, 512, JSON_THROW_ON_ERROR);
+        $total = count($state['parsed']['products']);
+        if ($state['next'] < $total) {
+            @set_time_limit(60);
+            $result = commerce_apply($state['parsed'], $state['next'], 25);
+            $state['next'] = $result['next'];
+            $state['created'] += $result['created']; $state['updated'] += $result['updated'];
+            rewind($handle);
+            $encoded = json_encode($state, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            if (fwrite($handle, $encoded) !== strlen($encoded) || !ftruncate($handle, strlen($encoded))) throw new ApiError('Не удалось сохранить прогресс импорта', 503);
+            fflush($handle);
+        }
+        return ['ok' => true, 'next' => $state['next'], 'total' => $total, 'created' => $state['created'], 'updated' => $state['updated'], 'done' => $state['next'] >= $total];
+    } finally { flock($handle, LOCK_UN); fclose($handle); }
 }
