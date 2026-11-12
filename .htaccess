@@ -3,6 +3,9 @@ DirectoryIndex index.html
 
 RewriteEngine On
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+<Files ".777-news.json">
+  Require all denied
+</Files>
 
 # Keep links created before the Plesk migration working.
 RewriteRule ^(catalog|about|contacts|services|cart|product|request|admin|admin-login)/?$ /$1.html [R=302,L,NE]

@@ -132,14 +132,17 @@
     let markup = '<button class="catalog-filter' + (activeCategory === "all" ? " active" : "") +
       '" type="button" data-cat="all"><span>Все товары</span><small>' + products.filter(isProductActive).length + "</small></button>";
 
-    roots().forEach(root => {
-      markup += categoryButton(root, false);
-      const children = childrenOf(root.id);
-      if (children.length) {
-        markup += '<div class="catalog-filter-children">' +
-          children.map(child => categoryButton(child, true)).join("") + "</div>";
-      }
-    });
+    function branch(category, trail = new Set()) {
+      if (trail.has(category.id)) return '';
+      const next = new Set(trail); next.add(category.id);
+      const children = childrenOf(category.id);
+      if (!children.length) return categoryButton(category, trail.size > 0);
+      const open = descendantsOf(category.id).has(activeCategory) ? ' open' : '';
+      return '<details class="catalog-tree-branch" data-branch="' + escapeHtml(category.id) + '"' + open + '><summary>' +
+        escapeHtml(category.name) + ' <small>' + countFor(category.id) + '</small></summary><div class="catalog-tree-children">' +
+        categoryButton({id:category.id,name:'Все товары раздела'},false) + children.map(child => branch(child,next)).join('') + '</div></details>';
+    }
+    roots().forEach(root => { markup += branch(root); });
     filterMount.innerHTML = markup;
   }
 

@@ -54,6 +54,7 @@
       <button class="admin-tab active" type="button" data-tab="dashboard">Обзор</button>
       <button class="admin-tab" type="button" data-tab="products">Товары</button>
       <button class="admin-tab" type="button" data-tab="categories">Категории</button>
+      <button class="admin-tab" type="button" data-tab="news">Новости и советы</button>
       <button class="admin-tab" type="button" data-tab="requests">Заявки</button>
       <button class="admin-tab" type="button" data-tab="settings">Контакты и сайт</button>
     </aside>
@@ -156,6 +157,25 @@
         </dialog>
       </section>
 
+      <section data-panel="news" hidden>
+        <div class="admin-title"><div><p class="eyebrow">Редакция</p><h1>Новости и советы</h1></div><button class="button button--primary" id="newNews" type="button">Создать публикацию</button></div>
+        <p>Публикуйте новости магазина и полезные советы. Черновики видны только в админке.</p>
+        <div id="newsAdminStatus" class="form-status" role="status" aria-live="polite"></div>
+        <div id="newsAdminList"></div>
+        <form class="admin-form" id="newsForm" hidden>
+          <h2 id="newsFormTitle">Публикация</h2>
+          <label>Тип<select id="newsKind"><option value="news">Новость</option><option value="tips">Полезный совет</option></select></label>
+          <label>Заголовок<input id="newsTitle" required maxlength="180"></label>
+          <label>Краткое описание<textarea id="newsSummary" maxlength="450" rows="3"></textarea></label>
+          <label>Текст публикации<textarea id="newsBody" required maxlength="40000" rows="14" placeholder="Разделяйте абзацы пустой строкой"></textarea></label>
+          <label>Обложка<input id="newsImage" type="url" placeholder="https://..."></label>
+          <label>Или загрузить обложку<input id="newsImageFile" type="file" accept="image/jpeg,image/png,image/webp"></label>
+          <img id="newsImagePreview" alt="Предпросмотр обложки" hidden style="max-width:100%;max-height:240px;object-fit:contain">
+          <label><input id="newsPublished" type="checkbox"> Опубликовать на сайте</label>
+          <div class="admin-form__actions"><button class="button button--primary" type="submit">Сохранить</button><button class="button button--ghost" id="cancelNews" type="button">Отмена</button></div>
+          <div id="newsSaveStatus" class="form-status" role="status" aria-live="polite"></div>
+        </form>
+      </section>
       <section data-panel="categories" hidden>
         <div class="admin-title">
           <div>
@@ -271,5 +291,6 @@
   <script src="admin.js?v=20261112-product-photos"></script>
   <script src="commerce-import.js?v=20261112-preserve-edits"></script>
   <script src="photo-search.js?v=20261110"></script>
+  <script src="news-admin.js?v=20261112"></script>
 </body>
 </html>

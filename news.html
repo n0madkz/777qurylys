@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Новости и полезные советы — 777</title><meta name="description" content="Новости строительного гипермаркета 777 и полезные советы по выбору инструментов и материалов."><link rel="icon" href="assets/main-logo.svg"><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="admin.css"><link rel="stylesheet" href="primary-logo.css"><link rel="stylesheet" href="storefront.css?v=20261112"></head><body>
+<header class="site-header">
+    <div class="container header__top">
+      <a class="brand" href="index.html" aria-label="777 — на главную">
+        <img src="assets/main-logo.svg" alt="777">
+      </a>
+      <div class="header__contacts">
+        <span class="muted">Ежедневно 08:00–20:00</span>
+        <a href="tel:+77758244380">+7 775 824 43 80</a>
+      </div>
+      <a class="quote-button has-inline-icon" href="cart.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14l-1 12H6L5 6Z"></path><path d="M8 6a4 4 0 0 1 8 0"></path></svg><span>Корзина</span><b class="quote-count" data-cart-count>0</b></a>
+    </div>
+    <div class="container header__nav-row">
+      <a class="catalog-button" href="catalog.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h5v5H4zM15 5h5v5h-5zM4 15h5v5H4zM15 15h5v5h-5z"></path></svg>
+        <span>Каталог</span>
+      </a>
+      <nav class="main-nav" aria-label="Главная навигация">
+        <a href="catalog.html">Товары</a>
+        <a href="services.html">Сервисы</a>
+        <a href="about.html">О компании</a>
+        <a href="index.html#contacts">Контакты</a>
+      </nav>
+      <label class="search" for="catalogSearch">
+        <svg class="search__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="5.5"></circle><path d="m16 16 4 4"></path></svg>
+        <input id="catalogSearch" type="search" autocomplete="off" placeholder="Поиск товаров и материалов">
+      </label>
+    </div>
+  </header>
+<main class="container news-page"><section class="page-hero"><p class="eyebrow">Практика и события</p><h1>Новости и<br><em>полезные советы.</em></h1><p>События магазина, выбор инструмента и решения для ваших проектов.</p></section><div id="newsFilters" class="news-filters" aria-label="Тип публикации"><button type="button" data-news-kind="all" aria-pressed="true">Все публикации</button><button type="button" data-news-kind="news" aria-pressed="false">Новости</button><button type="button" data-news-kind="tips" aria-pressed="false">Полезные советы</button></div><div id="newsFeed" class="news-grid" aria-live="polite"></div><button id="newsMore" class="button button--outline news-more" type="button" hidden>Показать ещё</button><article id="newsArticle" class="news-article" hidden></article></main>
+<footer class="footer"></footer><script src="cart-store.js"></script><script src="site-nav.js"></script><script src="footer.js?v=20261112-news"></script><script src="storefront.js?v=20261112"></script></body></html>

@@ -5,6 +5,7 @@ require __DIR__ . '/commerce-import.php';
 require __DIR__ . '/photo-search.php';
 require_once __DIR__ . '/product-brands.php';
 require_once __DIR__ . '/exchange.php';
+require_once __DIR__ . '/news.php';
 
 function category_row(array $value): array {
     return [
@@ -435,6 +436,24 @@ try {
     $route = trim((string)($_GET['route'] ?? ''), '/');
     $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
     if ($route === '1c-exchange') exchange_run();
+    if ($route === 'news') {
+        require_method('GET');
+        $posts = news_public(news_read());
+        if (isset($_GET['id'])) {
+            $matches = array_values(array_filter($posts, fn($post) => $post['id'] === (string)$_GET['id']));
+            if (!$matches) throw new ApiError('Публикация не найдена', 404);
+            send_json(['post'=>news_client($matches[0])]);
+        }
+        $posts = array_slice($posts, 0, max(1, min(1000, (int)($_GET['limit'] ?? 1000))));
+        $posts = array_map(function($post) { unset($post['body'], $post['version']); return news_client($post); }, $posts);
+        send_json(['posts'=>$posts]);
+    }
+    if ($route === 'admin/news') {
+        admin_required();
+        if ($method === 'GET') send_json(['posts'=>array_map('news_client', news_read())]);
+        if ($method === 'POST') send_json(news_save(request_json()));
+        throw new ApiError('Method not allowed', 405);
+    }
     if ($route === 'catalog') { require_method('GET'); send_json(['products' => get_products(true), 'settings' => get_settings(), 'categories' => get_categories(true)]); }
     if ($route === 'settings') { require_method('GET'); send_json(['settings' => get_settings()]); }
     if ($route === 'products') { require_method('GET'); send_json(['products' => get_products(true)]); }

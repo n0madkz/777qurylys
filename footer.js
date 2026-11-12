@@ -11,6 +11,7 @@
       <div>
         <b>Навигация</b>
         <a href="catalog.html">Товары</a>
+        <a href="news.html">Новости и советы</a>
         <a href="services.html">Сервисы</a>
         <a href="about.html">О компании</a>
       </div>
