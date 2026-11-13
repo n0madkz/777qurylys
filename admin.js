@@ -57,7 +57,9 @@
   const cloneCategories = list => list.map(item => ({
     id: String(item.id),
     name: String(item.name),
-    parent: String(item.parent || "")
+    parent: String(item.parent || ""),
+    active: item.active !== false,
+    mergedInto: String(item.merged_into || item.mergedInto || '')
   }));
 
   const cloneHeroSlides = list => (Array.isArray(list) ? list : []).map(item => ({
@@ -269,11 +271,11 @@
   }
 
   function roots() {
-    return categories.filter(category => !category.parent && !category.id.startsWith("onec-"));
+    return categories.filter(category => !category.parent && !category.mergedInto && !category.id.startsWith("onec-"));
   }
 
   function childrenOf(id) {
-    return categories.filter(category => category.parent === id);
+    return categories.filter(category => category.parent === id && !category.mergedInto);
   }
 
   function categoryProductCount(id) {
@@ -310,7 +312,7 @@
 
     const allowed = parentOnly
       ? roots().filter(category => category.id !== excludeId)
-      : categories.filter(category => !category.id.startsWith("onec-") && category.id !== excludeId && (!category.parent || map.has(category.parent)));
+      : categories.filter(category => !category.mergedInto && !category.id.startsWith("onec-") && category.id !== excludeId && (!category.parent || map.has(category.parent)));
 
     return allowed.map(makeOption).join("");
   }
@@ -630,7 +632,7 @@
         '<span>Раздел</span></div>' + categoryRow(root, "", rootProducts) + childrenMarkup + "</section>";
     }).join("");
 
-    const orphaned = categories.filter(category => !category.id.startsWith("onec-") && category.parent && !map.has(category.parent));
+    const orphaned = categories.filter(category => !category.mergedInto && !category.id.startsWith("onec-") && category.parent && !map.has(category.parent));
     const orphanedMarkup = orphaned.length
       ? '<section class="category-admin-group"><div class="category-admin-group__title"><span>Другие</span></div>' +
         orphaned.map(category => categoryRow(category, "", categoryProductCount(category.id))).join("") +

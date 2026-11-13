@@ -1,5 +1,5 @@
 (() => {
-  const key = '777-public-categories-v2';
+  const key = '777-public-categories-v3';
   let data = null;
   const listeners = new Set();
   const normalize = value => {

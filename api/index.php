@@ -6,16 +6,17 @@ require __DIR__ . '/photo-search.php';
 require_once __DIR__ . '/product-brands.php';
 require_once __DIR__ . '/exchange.php';
 require_once __DIR__ . '/news.php';
+require_once __DIR__ . '/category-aliases.php';
 
 function category_row(array $value): array {
     return [
         'id' => strtolower(text_value($value['id'] ?? '', 100)),
-        'parent_id' => strtolower(text_value($value['parent'] ?? $value['parent_id'] ?? '', 100)) ?: null,
+        'parent_id' => canonical_category_id(strtolower(text_value($value['parent'] ?? $value['parent_id'] ?? '', 100))) ?: null,
         'name' => text_value($value['name'] ?? '', 160),
         'translations' => json_object_value($value['translations'] ?? []),
         'icon' => text_value($value['icon'] ?? '', 120) ?: null,
         'sort_order' => (int)($value['sort_order'] ?? 0),
-        'is_active' => !str_starts_with((string)($value['id'] ?? ''), 'onec-') && bool_value($value['active'] ?? $value['is_active'] ?? true, true)
+        'is_active' => !isset(category_aliases()[(string)($value['id'] ?? '')]) && !str_starts_with((string)($value['id'] ?? ''), 'onec-') && bool_value($value['active'] ?? $value['is_active'] ?? true, true)
     ];
 }
 
@@ -24,7 +25,8 @@ function category_client(array $row): array {
     return [
         'id' => (string)$row['id'],
         'name' => (string)$row['name'],
-        'parent' => (string)($row['parent_id'] ?? ''),
+        'parent' => canonical_category_id((string)($row['parent_id'] ?? '')),
+        'merged_into' => category_aliases()[(string)$row['id']] ?? '',
         'active' => bool_value($row['is_active'] ?? true, true),
         'icon' => (string)($row['icon'] ?? '')
     ];
@@ -73,7 +75,7 @@ function product_client(array $row): array {
     }
     $product = array_merge($metadata, [
         'id' => (string)$row['id'],
-        'cat' => (string)($row['category_id'] ?? ''),
+        'cat' => canonical_category_id((string)($row['category_id'] ?? '')),
         'name' => (string)$row['name'],
         'brand' => trim((string)($row['brand'] ?? '')) ?: product_brand_from_name((string)$row['name']),
         'sku' => (string)($row['sku'] ?? ''),
@@ -91,7 +93,7 @@ function product_client(array $row): array {
 }
 
 function category_menu_cache_path(): string {
-    return rtrim(sys_get_temp_dir(), '/\\') . '/777-category-menu-v2-' . hash('sha256', supabase_url()) . '.json';
+    return rtrim(sys_get_temp_dir(), '/\\') . '/777-category-menu-v3-' . hash('sha256', supabase_url()) . '.json';
 }
 
 function get_categories(bool $publicOnly = false): array {
@@ -104,7 +106,7 @@ function get_categories(bool $publicOnly = false): array {
     if ($publicOnly) $query .= '&is_active=eq.true';
     $rows = supabase_json('GET', rest_path('categories', $query));
     $rows = is_array($rows) ? $rows : [];
-    if ($publicOnly) $rows = array_values(array_filter($rows, fn($row) => !str_starts_with((string)$row['id'], 'onec-')));
+    if ($publicOnly) $rows = array_values(array_filter($rows, fn($row) => !str_starts_with((string)$row['id'], 'onec-') && !isset(category_aliases()[(string)$row['id']])));
     $result = array_map('category_client', $rows);
     if ($publicOnly) @file_put_contents($cachePath, json_encode($result, JSON_UNESCAPED_UNICODE), LOCK_EX);
     return $result;
@@ -247,7 +249,7 @@ function store_categories(array $body): array {
     usort($categories, fn($a, $b) => category_depth($a['id'], $byId, $memo) <=> category_depth($b['id'], $byId, $memo));
     $existing = supabase_json('GET', rest_path('categories', '?select=id,parent_id'));
     $wantedIds = array_column($categories, 'id');
-    $removed = array_values(array_filter(is_array($existing) ? $existing : [], fn($row) => !in_array((string)$row['id'], $wantedIds, true)));
+    $removed = array_values(array_filter(is_array($existing) ? $existing : [], fn($row) => !isset(category_aliases()[(string)$row['id']]) && !in_array((string)$row['id'], $wantedIds, true)));
     usort($removed, fn($a, $b) => strlen((string)$b['parent_id']) <=> strlen((string)$a['parent_id']));
     foreach ($removed as $row) delete_by_id('categories', (string)$row['id']);
     if ($categories) batch_upsert('categories', $categories);
@@ -507,6 +509,10 @@ try {
     if ($route === 'admin/categorize') {
         require_method('POST');admin_required();
         $body=request_json();send_json(commerce_categorize_step((int)($body['offset']??0)));
+    }
+    if ($route === 'admin/merge-categories') {
+        require_method('POST');admin_required();$body=request_json();
+        send_json(category_merge_step((int)($body['offset']??0)));
     }
     if ($route === 'admin/photo-search') {
         require_method('POST'); admin_required();
