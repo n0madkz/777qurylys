@@ -2,7 +2,9 @@
 .catalog-dropdown{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #dce1de;border-top:3px solid #f76300;border-radius:0 0 14px 14px;padding:24px;box-shadow:0 18px 36px #0002;z-index:100;max-height:75vh;overflow:auto;color:#181d1f}
 .catalog-dropdown[hidden]{display:none}
 .catalog-dropdown-top{display:flex;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:1px solid #e6e9e7;margin-bottom:18px}
-.catalog-dropdown-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.catalog-dropdown-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 20px;align-items:start}
+.catalog-dropdown-grid>div>details>summary{box-sizing:border-box;min-height:72px;padding-top:12px;padding-bottom:12px}
+.catalog-dropdown-grid>div>a{box-sizing:border-box;min-height:72px;padding-top:12px;padding-bottom:12px}
 .catalog-dropdown a{display:block;padding:10px 8px;color:#181d1f}
 .catalog-dropdown a:hover{color:#c44500;background:#fff6ef}
 .catalog-dropdown summary,.catalog-tree-branch>summary{cursor:pointer;font-weight:600;padding:13px 10px;min-height:44px}
