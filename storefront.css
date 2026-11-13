@@ -15,6 +15,31 @@
 .catalog-filter-list .catalog-filter>span{flex:1;text-align:left;white-space:normal;overflow-wrap:anywhere}
 .catalog-filter-list .catalog-filter>small{margin-left:auto}
 .catalog-filter-list summary,.catalog-dropdown summary,.catalog-dropdown a{text-align:left}
+/* Catalogue text must remain legible at normal browser zoom. */
+.catalog-layout{color:#202827}
+.catalog-layout .catalog-filters>b,.catalog-layout .catalog-results__label{font-size:18px;line-height:1.4}
+.catalog-layout .catalog-filter-list .catalog-filter{min-height:48px;padding:12px 8px;gap:10px;color:#38443f;line-height:1.5}
+.catalog-layout .catalog-filter-list .catalog-filter>span{font-size:15px;font-weight:500}
+.catalog-layout .catalog-filter-list .catalog-filter>small{font-size:13px;color:#526058}
+.catalog-layout .catalog-filter-list .catalog-filter.active{color:#a63b00;background:#fff2e8}
+.catalog-layout .catalog-filter-list .catalog-filter.active>span{font-weight:700}
+.catalog-layout .catalog-tree-branch>summary{font-size:17px;line-height:1.45;padding:14px 8px;color:#202827}
+.catalog-layout .catalog-tree-branch>summary small{font-size:13px;color:#526058;margin-left:8px}
+.catalog-layout .catalog-tree-children{padding-left:14px}
+.catalog-layout .catalog-filter--child::before{flex:0 0 5px;margin-right:0}
+.catalog-layout .catalog-results__top{font-size:15px;line-height:1.5;color:#526058}
+.catalog-layout .catalog-sort-label{font-size:14px;color:#38443f;gap:8px}
+.catalog-layout .catalog-results__top select{font-size:15px;min-height:46px;padding:10px 12px}
+.catalog-layout .product-info h3{font-size:16px;line-height:1.5}
+.catalog-layout .product-info>small{font-size:13px;color:#526058}
+.catalog-layout .empty-state b{font-size:20px;line-height:1.4}
+.catalog-layout .empty-state p{font-size:16px;line-height:1.6;color:#526058}
+.catalog-layout .filter-help>b{font-size:18px}
+.catalog-layout .filter-help p{font-size:14px;line-height:1.6;color:#e0e5e2}
+.catalog-layout .filter-help .button{font-size:14px}
+.catalog-dropdown summary,.catalog-dropdown a{font-size:16px;line-height:1.5}
+.catalog-dropdown .catalog-dropdown-all{font-size:14px}
+@media(min-width:901px){.catalog-layout{grid-template-columns:280px minmax(0,1fr);gap:32px}}
 .catalog-tree-branch[open]>summary{color:#b13d00;background:#fff6ef}
 .news-home{padding-top:70px;padding-bottom:70px}
 .news-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
