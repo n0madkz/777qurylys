@@ -26,7 +26,7 @@
   const selectedProducts = () => {
     const items = window.CartStore ? window.CartStore.get() : [];
     return items.map(item => {
-      const product = products.find(candidate => String(candidate.id) === String(item.id));
+      const product = products.find(candidate => String(candidate.id) === String(item.id)) || item.snapshot;
       return product ? { ...product, cartQuantity: item.quantity } : {
         id:item.id, name:loading ? 'Загружаем товар…' : 'Товар недоступен: ' + item.id,
         cartQuantity:item.quantity, unavailable:true
@@ -184,8 +184,14 @@
           const response = await fetch('/api/product?id=' + encodeURIComponent(item.id), {cache:'no-store',signal:controller.signal});
           if (!response.ok) return;
           const data = await response.json();
-          if (data.product && String(data.product.id) === String(item.id)) resolved.push(data.product);
-        } catch (_) {} finally { clearTimeout(timer); }
+          if (data.product && String(data.product.id) === String(item.id)) {
+            resolved.push(data.product);
+            if (version === loadVersion) { products = resolved.slice(); render(); }
+          }
+        } catch (_) {} finally {
+          clearTimeout(timer);
+          if (item.snapshot && !resolved.some(product=>String(product.id)===String(item.id))) resolved.push({...item.snapshot,unavailable:true});
+        }
       }));
     }
     if (version !== loadVersion) return;

@@ -1,4 +1,5 @@
 (() => {
+  let displayedProduct = null;
   const fallbackProducts = [
     { id: 1, cat: "materials", name: "Керамзитобетонный блок 390×190×188", brand: "KZ Build", image: "https://media.adeo.com/media/2719703/media.png" },
     { id: 2, cat: "materials", name: "Профиль гипсокартонный 60×27", brand: "Knauf", image: "https://media.siniat.de/pi57691/preview/471426647/siniat-cd-profil" },
@@ -79,6 +80,7 @@
     setSeoValue('meta[name="robots"]', "noindex, nofollow");
   }
   function draw(product) {
+    displayedProduct = product;
     const mount = document.getElementById("productDetail");
     if (!product) {
       setNotFoundSeo();
@@ -123,7 +125,7 @@
     }
     const button = event.target.closest("[data-add-to-cart]");
     if (!button || !window.CartStore) return;
-    const added = window.CartStore.add(button.dataset.addToCart, selectedQuantity);
+    const added = window.CartStore.add(button.dataset.addToCart, selectedQuantity, displayedProduct);
     const feedback = document.querySelector("[data-cart-feedback]");
     if (feedback) feedback.textContent = "Добавлено: " + selectedQuantity + " шт. В корзине: " + added + " шт.";
     updateCartButton();

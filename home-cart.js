@@ -98,7 +98,7 @@
   setTranslations();
   window.addToQuote = id => {
     if (!window.CartStore) return;
-    window.CartStore.add(id, 1);
+    window.CartStore.add(id, 1, findProduct(id));
     renderHomeCart();
     if (typeof window.showToast === "function") window.showToast(text().added);
   };

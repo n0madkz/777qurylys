@@ -99,7 +99,7 @@
     grid.querySelectorAll("[data-add]").forEach(button => button.onclick = () => {
       const id = button.dataset.add;
       if (window.CartStore) {
-        window.CartStore.add(id, 1);
+        window.CartStore.add(id, 1, products.find(product=>String(product.id)===id));
         if (typeof window.renderQuote === "function") window.renderQuote();
         if (typeof window.showToast === "function") window.showToast("Товар добавлен в корзину.");
         return;

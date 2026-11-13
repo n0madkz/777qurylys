@@ -302,7 +302,8 @@
     }
     const button = event.target.closest("[data-add-cart]");
     if (!button || !window.CartStore) return;
-    const added = window.CartStore.add(decodeURIComponent(button.dataset.addCart));
+    const id = decodeURIComponent(button.dataset.addCart);
+    const added = window.CartStore.add(id, 1, products.find(product=>String(product.id)===id));
     button.setAttribute("aria-label", added ? "Товар добавлен в корзину" : "Товар уже в корзине");
     button.title = added ? "Товар добавлен" : "Уже в корзине";
     button.classList.toggle("is-added", true);

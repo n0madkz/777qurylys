@@ -22,6 +22,9 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
   buttons[0].onclick();buttons[0].onclick();
   assert.equal(JSON.parse(stored)[0].id,product.id);
   assert.equal(JSON.parse(stored)[0].quantity,2);
+  assert.equal(JSON.parse(stored)[0].snapshot.name,'Ceresit','Save card for immediate display');
+  context.window.CartStore.update(product.id,3);
+  assert.equal(context.window.CartStore.get()[0].snapshot.name,'Ceresit','Quantity edits must preserve card');
   context.window.CartStore.add(NaN);
   assert.equal(JSON.parse(stored).length,1,'Reject numeric NaN');
   console.log('Homepage click → CartStore persistence: 1C string IDs, quantity and corrupt-ID guard passed.');

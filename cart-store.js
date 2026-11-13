@@ -16,7 +16,8 @@
       if (!validId(id)) return;
       const quantity = typeof item === "object" && item !== null ? normalizeQuantity(item.quantity) : 1;
       const current = merged.get(id)?.quantity || 0;
-      merged.set(id, { id, quantity: Math.min(maxQuantity, current + quantity) });
+      const snapshot = typeof item === 'object' && item.snapshot && String(item.snapshot.id) === id ? item.snapshot : merged.get(id)?.snapshot;
+      merged.set(id, { id, quantity: Math.min(maxQuantity, current + quantity), ...(snapshot ? {snapshot} : {}) });
     });
     return Array.from(merged.values());
   }
@@ -54,7 +55,7 @@
     quantity(id) {
       return read().find(item => item.id === String(id))?.quantity || 0;
     },
-    add(id, quantity = 1) {
+    add(id, quantity = 1, product = null) {
       const items = read();
       const value = String(id || "");
       if (!validId(value)) return 0;
@@ -62,6 +63,10 @@
       const nextQuantity = normalizeQuantity(quantity);
       if (index === -1) items.push({ id: value, quantity: nextQuantity });
       else items[index].quantity = Math.min(maxQuantity, items[index].quantity + nextQuantity);
+      if (product && String(product.id) === value) {
+        const entry = items.find(item=>item.id===value);
+        entry.snapshot = Object.fromEntries(['id','name','title','brand','cat','image','thumbnail'].filter(key=>product[key]!==undefined).map(key=>[key,product[key]]));
+      }
       write(items);
       return items.find(item => item.id === value)?.quantity || 0;
     },
