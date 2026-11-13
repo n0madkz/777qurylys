@@ -547,6 +547,7 @@ try {
         if ($method === 'PUT') send_json(store_settings(request_json()));
         throw new ApiError('Method not allowed', 405);
     }
+    if ($route === 'admin/telegram') { admin_required(); send_json(telegram_admin($method)); }
     if ($route === 'admin/requests') send_json(admin_requests($method));
     if ($route === 'sitemap') sitemap();
     throw new ApiError('Not found', 404);

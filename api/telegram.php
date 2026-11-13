@@ -26,7 +26,10 @@ function telegram_enqueue_request(array $request, array $items, array $files): v
     $id = preg_replace('/[^a-zA-Z0-9-]/', '', (string)$request['id']);
     $path = telegram_queue_directory() . '/' . $id . '.json';
     $handle = @fopen($path, 'x');
-    if (!$handle) return; // Same request is queued only once.
+    if (!$handle) {
+        if (is_file($path)) return;
+        throw new RuntimeException('Нет прав на запись очереди Telegram');
+    }
     try {
         $data = json_encode(['messages'=>telegram_request_messages($request,$items,$files),'next'=>0], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         if (fwrite($handle, $data) !== strlen($data)) throw new RuntimeException('Telegram queue write failed');
@@ -35,18 +38,50 @@ function telegram_enqueue_request(array $request, array $items, array $files): v
 }
 
 function telegram_send_message(string $text): void {
+    telegram_api('sendMessage', ['chat_id'=>config_value('TELEGRAM_CHAT_ID'),'text'=>$text,'protect_content'=>true,'link_preview_options'=>['is_disabled'=>true]]);
+}
+
+function telegram_api(string $method, array $payload = []): array {
     $token = config_value('TELEGRAM_BOT_TOKEN');
     $chat = config_value('TELEGRAM_CHAT_ID');
-    if (!preg_match('/^\d+:[A-Za-z0-9_-]+$/', $token) || !preg_match('/^-100\d+$/', $chat)) throw new RuntimeException('Telegram not configured');
+    if (!preg_match('/^\d+:[A-Za-z0-9_-]+$/', $token)) throw new RuntimeException('TELEGRAM_BOT_TOKEN не задан или имеет неверный формат. Проверьте .777qurylys.env выше httpdocs.');
+    if (!preg_match('/^-100\d+$/', $chat)) throw new RuntimeException('TELEGRAM_CHAT_ID не задан или имеет неверный формат: нужен числовой ID -100…');
     $context = stream_context_create(['http'=>[
         'method'=>'POST', 'timeout'=>8, 'ignore_errors'=>true,
         'header'=>"Content-Type: application/json\r\n",
-        'content'=>json_encode(['chat_id'=>$chat,'text'=>$text,'protect_content'=>true,'link_preview_options'=>['is_disabled'=>true]], JSON_UNESCAPED_UNICODE)
+        'content'=>json_encode($payload, JSON_UNESCAPED_UNICODE)
     ]]);
     // Never log the URL: it contains the bot token.
-    $result = @file_get_contents('https://api.telegram.org/bot' . $token . '/sendMessage', false, $context);
+    $url = 'https://api.telegram.org/bot' . $token . '/' . $method;
+    if (function_exists('curl_init')) {
+        $curl = curl_init($url);
+        curl_setopt_array($curl,[CURLOPT_POST=>true,CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>8,CURLOPT_HTTPHEADER=>['Content-Type: application/json'],CURLOPT_POSTFIELDS=>json_encode($payload,JSON_UNESCAPED_UNICODE)]);
+        $result = curl_exec($curl);
+        curl_close($curl);
+    } else $result = @file_get_contents($url, false, $context);
     $body = $result === false ? null : json_decode($result, true);
-    if (!is_array($body) || ($body['ok'] ?? false) !== true) throw new RuntimeException('Telegram delivery failed');
+    if (!is_array($body)) throw new RuntimeException('Сервер не получил ответ Telegram. Проверьте исходящий HTTPS и PHP cURL.');
+    if (($body['ok'] ?? false) !== true) {
+        $description = str_replace($token,'[скрыто]',(string)($body['description'] ?? 'Ошибка Telegram'));
+        throw new RuntimeException('Telegram: ' . substr($description,0,300));
+    }
+    return $body['result'] ?? [];
+}
+
+function telegram_admin(string $method): array {
+    if ($method !== 'POST') throw new ApiError('Method not allowed',405);
+    $body = request_json();
+    try {
+        $bot = telegram_api('getMe');
+        $chat = telegram_api('getChat',['chat_id'=>config_value('TELEGRAM_CHAT_ID')]);
+        $member = telegram_api('getChatMember',['chat_id'=>config_value('TELEGRAM_CHAT_ID'),'user_id'=>$bot['id']]);
+        if (($member['status'] ?? '') !== 'administrator' || empty($member['can_post_messages'])) throw new RuntimeException('Боту нужно право публикации сообщений в канале.');
+        $directory = telegram_queue_directory();
+        if (!is_writable($directory)) throw new RuntimeException('PHP не может записывать в папку очереди Telegram.');
+        if (($body['action'] ?? '') === 'retry') $sent = telegram_drain_queue(20);
+        $pending = count(glob($directory . '/*.json') ?: []);
+        return ['ok'=>true,'message'=>'Бот @' . ($bot['username'] ?? '') . ', канал «' . ($chat['title'] ?? '') . '». Ожидают отправки: ' . $pending . (isset($sent) ? '. Отправлено сообщений: ' . $sent : '')];
+    } catch (Throwable $error) { throw new ApiError($error->getMessage(),502); }
 }
 
 function telegram_drain_queue(int $limit = 10, ?callable $send = null): int {
