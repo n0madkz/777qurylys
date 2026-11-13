@@ -1,9 +1,4 @@
 (() => {
-  const fallbackProducts = [
-    { id: 1, cat: "materials", name: "Керамзитобетонный блок 390×190×188", brand: "KZ Build", image: "assets/product-block.jpg" },
-    { id: 2, cat: "materials", name: "Профиль гипсокартонный 60×27", brand: "Knauf", image: "assets/product-profile.jpg" },
-    { id: 3, cat: "tools", name: "Перфоратор аккумуляторный PRO 20V", brand: "DeWalt", image: "assets/product-drill.jpg" }
-  ];
   const allowed = /\.(pdf|png|jpe?g|xlsx?|docx?)$/i;
   const maxFileSize = 10 * 1024 * 1024;
   const $ = selector => document.querySelector(selector);
@@ -17,7 +12,9 @@
   const clientType = $("#cartClientType");
   const legalFields = $("#cartLegalFields");
   const legalRequiredFields = [$("#cartCompanyName"), $("#cartBin"), $("#cartLegalAddress")];
-  let products = fallbackProducts.slice();
+  let products = [];
+  let loading = true;
+  let loadVersion = 0;
 
   const escapeHtml = value => String(value == null ? "" : value).replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
   const productName = product => typeof product?.name === "object"
@@ -30,8 +27,11 @@
     const items = window.CartStore ? window.CartStore.get() : [];
     return items.map(item => {
       const product = products.find(candidate => String(candidate.id) === String(item.id));
-      return product ? { ...product, cartQuantity: item.quantity } : null;
-    }).filter(Boolean);
+      return product ? { ...product, cartQuantity: item.quantity } : {
+        id:item.id, name:loading ? 'Загружаем товар…' : 'Товар недоступен: ' + item.id,
+        cartQuantity:item.quantity, unavailable:true
+      };
+    });
   };
 
   function setStatus(message, type = "") {
@@ -68,7 +68,11 @@
     const quantity = selected.reduce((total, product) => total + (Number(product.cartQuantity) || 1), 0);
     countNode.textContent = quantity ? quantity + " " + plural(quantity) : "";
     itemsNode.innerHTML = selected.length ? selected.map(productMarkup).join("") : cartEmptyMarkup();
-    submit.disabled = false;
+    const unresolved = selected.some(product => product.unavailable);
+    submit.disabled = loading || unresolved;
+    if (!loading && unresolved) {
+      itemsNode.innerHTML += '<p class="form-status is-error">Не удалось загрузить часть товаров. Повторите загрузку или удалите недоступные позиции.</p><button type="button" class="button button--outline" data-retry-cart>Повторить загрузку</button>';
+    }
   }
 
   function plural(value) {
@@ -94,6 +98,7 @@
   }
 
   itemsNode.addEventListener("click", event => {
+    if (event.target.closest('[data-retry-cart]')) { loadProducts(); return; }
     const button = event.target.closest("[data-remove-cart]");
     if (button && window.CartStore) {
       window.CartStore.remove(button.dataset.removeCart);
@@ -125,8 +130,8 @@
   form.addEventListener("submit", async event => {
     event.preventDefault();
     const selected = selectedProducts();
-    if (false && !selected.length) {
-      setStatus("Добавьте хотя бы один товар в корзину.", "error");
+    if (loading || selected.some(product => product.unavailable)) {
+      setStatus("Дождитесь загрузки товаров или удалите недоступные позиции.", "error");
       return;
     }
     if (!form.reportValidity() || !validateFiles()) return;
@@ -165,18 +170,31 @@
   });
 
   async function loadProducts() {
-    try {
-      const response = await fetch("/api/catalog", { cache: "no-store" });
-      const data = response.ok ? await response.json() : null;
-      if (Array.isArray(data?.products) && data.products.length) products = data.products;
-    } catch {
-      try {
-        const local = JSON.parse(localStorage.getItem("kurylys_products") || "[]");
-        if (Array.isArray(local) && local.length) products = local;
-      } catch {}
+    const version = ++loadVersion;
+    loading = true;
+    render();
+    const entries = window.CartStore?.get() || [];
+    const resolved = [];
+    // Resolve only the selected IDs; do not depend on a full catalogue response.
+    for (let start = 0; start < entries.length; start += 5) {
+      await Promise.all(entries.slice(start,start+5).map(async item => {
+        const controller = new AbortController();
+        const timer = setTimeout(()=>controller.abort(),15000);
+        try {
+          const response = await fetch('/api/product?id=' + encodeURIComponent(item.id), {cache:'no-store',signal:controller.signal});
+          if (!response.ok) return;
+          const data = await response.json();
+          if (data.product && String(data.product.id) === String(item.id)) resolved.push(data.product);
+        } catch (_) {} finally { clearTimeout(timer); }
+      }));
     }
+    if (version !== loadVersion) return;
+    products = resolved;
+    loading = false;
     render();
   }
+
+  window.addEventListener('storage', event => { if (event.key === 'kurylys_cart') loadProducts(); });
 
   render();
   setClientType(clientType.value);
