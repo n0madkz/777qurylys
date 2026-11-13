@@ -7,6 +7,7 @@ require_once __DIR__ . '/product-brands.php';
 require_once __DIR__ . '/exchange.php';
 require_once __DIR__ . '/news.php';
 require_once __DIR__ . '/category-aliases.php';
+require_once __DIR__ . '/telegram.php';
 
 function category_row(array $value): array {
     return [
@@ -331,6 +332,7 @@ function save_request(): array {
     ]], ['Prefer: return=representation']);
     $requestId = (string)($created[0]['id'] ?? '');
     if ($requestId === '') throw new ApiError('Не удалось сохранить заявку', 502);
+    $rows = [];
     $items = json_decode((string)($_POST['products'] ?? '[]'), true);
     if (is_array($items) && $items) {
         $rows = [];
@@ -358,6 +360,17 @@ function save_request(): array {
             'mime_type' => $file['type'] ?: 'application/octet-stream', 'size_bytes' => $file['size']
         ]], ['Prefer: return=representation']);
     }
+    try {
+        telegram_enqueue_request($created[0], $rows, array_map(fn($file)=>basename($file['name']), $files));
+    } catch (Throwable $error) {
+        error_log('Telegram queue failed for request ' . $requestId);
+    }
+    // Return success for the saved request even when Telegram is temporarily offline.
+    register_shutdown_function(function () {
+        if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+        try { telegram_drain_queue(2); }
+        catch (Throwable $error) { error_log('Telegram notification pending'); }
+    });
     return ['ok' => true, 'id' => $requestId];
 }
 
