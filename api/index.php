@@ -345,6 +345,7 @@ function save_request(): array {
         if ($rows) supabase_json('POST', rest_path('request_items'), $rows, ['Prefer: return=representation']);
     }
     $files = request_files();
+    $telegramDocuments = [];
     if (count($files) > 10) throw new ApiError('Можно прикрепить не более 10 файлов', 400);
     $allowed = ['pdf', 'png', 'jpg', 'jpeg', 'xls', 'xlsx', 'doc', 'docx'];
     foreach ($files as $file) {
@@ -359,9 +360,10 @@ function save_request(): array {
             'request_id' => $requestId, 'storage_path' => $path, 'original_name' => basename($file['name']),
             'mime_type' => $file['type'] ?: 'application/octet-stream', 'size_bytes' => $file['size']
         ]], ['Prefer: return=representation']);
+        $telegramDocuments[] = ['storage_path'=>$path,'original_name'=>basename($file['name']),'mime_type'=>$file['type'] ?: 'application/octet-stream'];
     }
     try {
-        telegram_enqueue_request($created[0], $rows, array_map(fn($file)=>basename($file['name']), $files));
+        telegram_enqueue_request($created[0], $rows, $telegramDocuments);
     } catch (Throwable $error) {
         error_log('Telegram queue failed for request ' . $requestId);
     }

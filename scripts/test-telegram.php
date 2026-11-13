@@ -23,7 +23,21 @@ try {
     check(count($sent)===count(telegram_request_messages($request,[],[])),'Retry must resume after successful chunk');
     check(count(glob($queue.'/*.json'))===0,'Delivered queue entry retained');
     check(telegram_drain_queue(20,function(){throw new RuntimeException('Duplicate');})===0,'Repeated drain duplicated delivery');
-    echo "Telegram formatting, queue, failure, resume and deduplication checks passed.\n";
+    $request['id']='request-files'; $request['description']='Файлы';
+    $documents=[['storage_path'=>'requests/request-files/a.pdf','original_name'=>'смета.pdf','mime_type'=>'application/pdf'],['storage_path'=>'requests/request-files/b.xlsx','original_name'=>'список.xlsx','mime_type'=>'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']];
+    telegram_enqueue_request($request,[],$documents);
+    $textCount=0;$documentCount=0;
+    try {
+        telegram_drain_queue(20,function()use(&$textCount){$textCount++;},function($document,$id)use(&$documentCount){
+            check($id==='request-files','Wrong attachment request');
+            if($documentCount===1)throw new RuntimeException('File upload interrupted');
+            check($document['original_name']==='смета.pdf','Original filename lost');$documentCount++;
+        });
+    } catch(RuntimeException $error) { check($error->getMessage()==='File upload interrupted','Unexpected attachment failure'); }
+    check($textCount===1 && $documentCount===1,'Text must precede files');
+    telegram_drain_queue(20,function(){throw new RuntimeException('Repeated text');},function($document)use(&$documentCount){check($document['original_name']==='список.xlsx','Must resume at second file');$documentCount++;});
+    check($documentCount===2 && count(glob($queue.'/*.json'))===0,'Attachment retry/cleanup failed');
+    echo "Telegram formatting, queue, attachment order, failure, resume and deduplication checks passed.\n";
 } finally {
     foreach(glob($queue.'/*')?:[] as $path)unlink($path);
     if(is_file($queue.'/.lock'))unlink($queue.'/.lock');

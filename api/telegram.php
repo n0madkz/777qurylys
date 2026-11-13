@@ -31,7 +31,9 @@ function telegram_enqueue_request(array $request, array $items, array $files): v
         throw new RuntimeException('Нет прав на запись очереди Telegram');
     }
     try {
-        $data = json_encode(['messages'=>telegram_request_messages($request,$items,$files),'next'=>0], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        $names = array_map(fn($file)=>is_array($file) ? $file['original_name'] : $file,$files);
+        $documents = array_values(array_filter($files,'is_array'));
+        $data = json_encode(['messages'=>telegram_request_messages($request,$items,$names),'next'=>0,'documents'=>$documents,'next_document'=>0,'request_id'=>$id], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         if (fwrite($handle, $data) !== strlen($data)) throw new RuntimeException('Telegram queue write failed');
     } finally { fclose($handle); }
     @chmod($path, 0600);
@@ -41,11 +43,12 @@ function telegram_send_message(string $text): void {
     telegram_api('sendMessage', ['chat_id'=>config_value('TELEGRAM_CHAT_ID'),'text'=>$text,'protect_content'=>true,'link_preview_options'=>['is_disabled'=>true]]);
 }
 
-function telegram_api(string $method, array $payload = []): array {
+function telegram_api(string $method, array $payload = [], bool $multipart = false): array {
     $token = config_value('TELEGRAM_BOT_TOKEN');
     $chat = config_value('TELEGRAM_CHAT_ID');
     if (!preg_match('/^\d+:[A-Za-z0-9_-]+$/', $token)) throw new RuntimeException('TELEGRAM_BOT_TOKEN не задан или имеет неверный формат. Проверьте .777qurylys.env выше httpdocs.');
     if (!preg_match('/^-100\d+$/', $chat)) throw new RuntimeException('TELEGRAM_CHAT_ID не задан или имеет неверный формат: нужен числовой ID -100…');
+    if ($multipart && !function_exists('curl_init')) throw new RuntimeException('Для отправки файлов включите расширение PHP cURL в Plesk.');
     $context = stream_context_create(['http'=>[
         'method'=>'POST', 'timeout'=>8, 'ignore_errors'=>true,
         'header'=>"Content-Type: application/json\r\n",
@@ -55,7 +58,7 @@ function telegram_api(string $method, array $payload = []): array {
     $url = 'https://api.telegram.org/bot' . $token . '/' . $method;
     if (function_exists('curl_init')) {
         $curl = curl_init($url);
-        curl_setopt_array($curl,[CURLOPT_POST=>true,CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>8,CURLOPT_HTTPHEADER=>['Content-Type: application/json'],CURLOPT_POSTFIELDS=>json_encode($payload,JSON_UNESCAPED_UNICODE)]);
+        curl_setopt_array($curl,[CURLOPT_POST=>true,CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>$multipart ? 60 : 8,CURLOPT_HTTPHEADER=>$multipart ? [] : ['Content-Type: application/json'],CURLOPT_POSTFIELDS=>$multipart ? $payload : json_encode($payload,JSON_UNESCAPED_UNICODE)]);
         $result = curl_exec($curl);
         curl_close($curl);
     } else $result = @file_get_contents($url, false, $context);
@@ -66,6 +69,25 @@ function telegram_api(string $method, array $payload = []): array {
         throw new RuntimeException('Telegram: ' . substr($description,0,300));
     }
     return $body['result'] ?? [];
+}
+
+function telegram_send_document(array $document, string $requestId): void {
+    if (!class_exists('CURLFile')) throw new RuntimeException('Для отправки файлов включите расширение PHP cURL в Plesk.');
+    $path = (string)($document['storage_path'] ?? '');
+    if (!storage_path_valid($path) || !str_starts_with($path,'requests/' . $requestId . '/')) throw new RuntimeException('Некорректный путь документа заявки.');
+    $response = supabase_http('GET','storage/v1/object/request-documents/' . str_replace('%2F','/',rawurlencode($path)));
+    if ($response['status'] < 200 || $response['status'] >= 300) throw new RuntimeException('Не удалось скачать документ заявки из хранилища.');
+    $temporary = tempnam(telegram_queue_directory(),'upload-');
+    if ($temporary === false) throw new RuntimeException('Не удалось подготовить документ Telegram.');
+    @chmod($temporary,0600);
+    try {
+        if (file_put_contents($temporary,$response['body']) !== strlen($response['body'])) throw new RuntimeException('Ошибка записи документа Telegram.');
+        telegram_api('sendDocument',[
+            'chat_id'=>config_value('TELEGRAM_CHAT_ID'),'protect_content'=>'true',
+            'caption'=>'Документ к заявке №' . $requestId,
+            'document'=>new CURLFile($temporary,(string)($document['mime_type'] ?? 'application/octet-stream'),basename((string)$document['original_name']))
+        ],true);
+    } finally { unlink($temporary); }
 }
 
 function telegram_admin(string $method): array {
@@ -84,7 +106,7 @@ function telegram_admin(string $method): array {
     } catch (Throwable $error) { throw new ApiError($error->getMessage(),502); }
 }
 
-function telegram_drain_queue(int $limit = 10, ?callable $send = null): int {
+function telegram_drain_queue(int $limit = 10, ?callable $send = null, ?callable $sendDocument = null): int {
     if ($send === null && (config_value('TELEGRAM_BOT_TOKEN') === '' || config_value('TELEGRAM_CHAT_ID') === '')) return 0;
     $directory = telegram_queue_directory();
     $lock = fopen($directory . '/.lock', 'c');
@@ -94,12 +116,22 @@ function telegram_drain_queue(int $limit = 10, ?callable $send = null): int {
         foreach (glob($directory . '/*.json') ?: [] as $path) {
             $job = json_decode((string)file_get_contents($path), true);
             if (!is_array($job) || !isset($job['messages'], $job['next'])) continue;
+            $requestId = $job['request_id'] ?? basename($path,'.json');
+            if (!isset($job['documents'])) {
+                $job['documents'] = supabase_json('GET',rest_path('request_documents','?request_id=eq.'.rawurlencode($requestId).'&select=storage_path,original_name,mime_type'));
+            }
+            $job['next_document'] = $job['next_document'] ?? 0;
             while ($job['next'] < count($job['messages']) && $sent < $limit) {
                 ($send ?? 'telegram_send_message')($job['messages'][$job['next']]);
                 $job['next']++; $sent++;
                 file_put_contents($path, json_encode($job, JSON_UNESCAPED_UNICODE), LOCK_EX);
             }
-            if ($job['next'] >= count($job['messages'])) unlink($path);
+            while ($job['next'] >= count($job['messages']) && $job['next_document'] < count($job['documents']) && $sent < $limit) {
+                ($sendDocument ?? 'telegram_send_document')($job['documents'][$job['next_document']],$requestId);
+                $job['next_document']++; $sent++;
+                file_put_contents($path,json_encode($job,JSON_UNESCAPED_UNICODE),LOCK_EX);
+            }
+            if ($job['next'] >= count($job['messages']) && $job['next_document'] >= count($job['documents'])) unlink($path);
             if ($sent >= $limit) break;
         }
     } finally { flock($lock, LOCK_UN); fclose($lock); }
