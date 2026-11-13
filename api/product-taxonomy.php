@@ -35,7 +35,7 @@ function product_taxonomy_categories(): array {
     $tree['electrical'][1]['floorheating']='Электрический тёплый пол';
     $rows=[];
     foreach($tree as $root=>[$name,$children]) {
-        $rows[]=['id'=>'shop-'.$root,'name'=>$name,'parent_id'=>null,'is_active'=>true];
+        $rows[]=['id'=>'shop-'.$root,'name'=>$name,'parent_id'=>null,'is_active'=>$root!=='other'];
         foreach($children as $id=>$label)$rows[]=['id'=>'shop-'.$root.'-'.$id,'name'=>$label,'parent_id'=>'shop-'.$root,'is_active'=>true];
     }
     return $rows;

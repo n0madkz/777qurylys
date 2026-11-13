@@ -16,7 +16,7 @@ function category_row(array $value): array {
         'translations' => json_object_value($value['translations'] ?? []),
         'icon' => text_value($value['icon'] ?? '', 120) ?: null,
         'sort_order' => (int)($value['sort_order'] ?? 0),
-        'is_active' => !isset(category_aliases()[(string)($value['id'] ?? '')]) && !str_starts_with((string)($value['id'] ?? ''), 'onec-') && bool_value($value['active'] ?? $value['is_active'] ?? true, true)
+        'is_active' => ($value['id'] ?? '') !== 'shop-other' && !isset(category_aliases()[(string)($value['id'] ?? '')]) && !str_starts_with((string)($value['id'] ?? ''), 'onec-') && bool_value($value['active'] ?? $value['is_active'] ?? true, true)
     ];
 }
 
@@ -27,7 +27,7 @@ function category_client(array $row): array {
         'name' => (string)$row['name'],
         'parent' => canonical_category_id((string)($row['parent_id'] ?? '')),
         'merged_into' => category_aliases()[(string)$row['id']] ?? '',
-        'active' => bool_value($row['is_active'] ?? true, true),
+        'active' => $row['id'] !== 'shop-other' && bool_value($row['is_active'] ?? true, true),
         'icon' => (string)($row['icon'] ?? '')
     ];
 }
@@ -93,7 +93,7 @@ function product_client(array $row): array {
 }
 
 function category_menu_cache_path(): string {
-    return rtrim(sys_get_temp_dir(), '/\\') . '/777-category-menu-v3-' . hash('sha256', supabase_url()) . '.json';
+    return rtrim(sys_get_temp_dir(), '/\\') . '/777-category-menu-v4-' . hash('sha256', supabase_url()) . '.json';
 }
 
 function get_categories(bool $publicOnly = false): array {
@@ -106,7 +106,7 @@ function get_categories(bool $publicOnly = false): array {
     if ($publicOnly) $query .= '&is_active=eq.true';
     $rows = supabase_json('GET', rest_path('categories', $query));
     $rows = is_array($rows) ? $rows : [];
-    if ($publicOnly) $rows = array_values(array_filter($rows, fn($row) => !str_starts_with((string)$row['id'], 'onec-') && !isset(category_aliases()[(string)$row['id']])));
+    if ($publicOnly) $rows = array_values(array_filter($rows, fn($row) => $row['id'] !== 'shop-other' && !str_starts_with((string)$row['id'], 'onec-') && !isset(category_aliases()[(string)$row['id']])));
     $result = array_map('category_client', $rows);
     if ($publicOnly) @file_put_contents($cachePath, json_encode($result, JSON_UNESCAPED_UNICODE), LOCK_EX);
     return $result;
