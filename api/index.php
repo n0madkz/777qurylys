@@ -20,6 +20,7 @@ function category_row(array $value): array {
 }
 
 function category_client(array $row): array {
+    if (($row['id'] ?? '') === 'shop-household-drinks' && ($row['name'] ?? '') === 'Напитки') $row['name'] = 'Сопутствующие товары';
     return [
         'id' => (string)$row['id'],
         'name' => (string)$row['name'],
@@ -90,7 +91,7 @@ function product_client(array $row): array {
 }
 
 function category_menu_cache_path(): string {
-    return rtrim(sys_get_temp_dir(), '/\\') . '/777-category-menu-' . hash('sha256', supabase_url()) . '.json';
+    return rtrim(sys_get_temp_dir(), '/\\') . '/777-category-menu-v2-' . hash('sha256', supabase_url()) . '.json';
 }
 
 function get_categories(bool $publicOnly = false): array {

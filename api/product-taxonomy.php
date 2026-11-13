@@ -21,7 +21,7 @@ function product_taxonomy_categories(): array {
     $tree['hand'][1]['ladders']='Лестницы и стремянки';
     $tree['accessories'][1]['welding']='Сварочные электроды';
     $tree['household'][1]['office']='Разметка и канцелярские товары';
-    $tree['household'][1]['drinks']='Напитки';
+    $tree['household'][1]['drinks']='Сопутствующие товары';
     $tree['hand'][1]['tiletools']='Плиткорезы и присоски';
     $tree['household'][1]['gas']='Газовые баллоны и горелки';
     $tree['plumbing'][1]['pumps']='Насосы и насосные станции';
