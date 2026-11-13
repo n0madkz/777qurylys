@@ -26,6 +26,21 @@
 .news-filters button{padding:12px 20px;border:1px solid #d9dfdb;border-radius:24px;background:#fff;color:#181d1f;cursor:pointer;min-height:44px}
 .news-filters button[aria-pressed=true]{background:#181d1f;color:#fff;border-color:#181d1f}
 .news-page{padding-bottom:70px}
+/* Keep translated header controls in the same positions. */
+.site-header .quote-button{width:176px;flex-shrink:0;justify-content:center;white-space:nowrap}
+.site-header .language-switcher{flex-shrink:0}
+.site-header .language-switcher .lang{width:30px;flex:0 0 30px;padding-left:0;padding-right:0}
+@media(min-width:901px){
+  .site-header .header__contacts{flex:0 0 320px;justify-content:space-between;gap:12px;white-space:nowrap}
+  .site-header .main-nav>a{flex-shrink:0}
+  .site-header .main-nav>a:nth-child(1){width:62px}
+  .site-header .main-nav>a:nth-child(2){width:70px}
+  .site-header .main-nav>a:nth-child(3){width:116px}
+  .site-header .main-nav>a:nth-child(4){width:76px}
+}
+/* Measurement copies use a language ancestor instead of changing the page language. */
+[lang="kz"] .hero__content h1,[lang="kz"] .hero__content .button{font-family:"Segoe UI",Arial,sans-serif!important;font-weight:800}
+@media(max-width:600px){.site-header .quote-button{width:48px;padding-left:0;padding-right:0}}
 .news-article{max-width:800px;margin:30px auto 70px}
 .news-article h1{font-size:clamp(30px,5vw,50px);line-height:1.15;margin:24px 0;overflow-wrap:anywhere}
 .news-article p{font-size:17px;line-height:1.8;white-space:pre-line;overflow-wrap:anywhere;margin:24px 0}
