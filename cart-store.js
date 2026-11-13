@@ -1,6 +1,7 @@
 (() => {
   const storageKey = "kurylys_cart";
   const maxQuantity = 9999;
+  const validId = value => value && !['NaN','undefined','null','Infinity','-Infinity'].includes(value);
 
   function normalizeQuantity(value) {
     const quantity = Math.floor(Number(value));
@@ -12,7 +13,7 @@
     if (!Array.isArray(value)) return [];
     value.forEach(item => {
       const id = typeof item === "object" && item !== null ? String(item.id || "") : String(item || "");
-      if (!id) return;
+      if (!validId(id)) return;
       const quantity = typeof item === "object" && item !== null ? normalizeQuantity(item.quantity) : 1;
       const current = merged.get(id)?.quantity || 0;
       merged.set(id, { id, quantity: Math.min(maxQuantity, current + quantity) });
@@ -56,7 +57,7 @@
     add(id, quantity = 1) {
       const items = read();
       const value = String(id || "");
-      if (!value) return 0;
+      if (!validId(value)) return 0;
       const index = items.findIndex(item => item.id === value);
       const nextQuantity = normalizeQuantity(quantity);
       if (index === -1) items.push({ id: value, quantity: nextQuantity });

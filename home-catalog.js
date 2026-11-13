@@ -71,7 +71,7 @@
       '<a class="product-media__link" href="' + url + '" aria-label="Открыть товар: ' + escapeHtml(name) + '">' +
       '<img src="' + escapeHtml(image) + '" alt="' + escapeHtml(name) + '" width="640" height="480" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'assets/building-materials-hero.png\'"></a>' +
       badge +
-      '<button class="product-card__add" data-add="' + Number(product.id) + '" aria-label="Добавить в заявку" title="Добавить в заявку"></button>' +
+      '<button class="product-card__add" data-add="' + escapeHtml(product.id) + '" aria-label="Добавить в корзину" title="Добавить в корзину"></button>' +
       "</div>" +
       '<div class="product-info"><small>' + escapeHtml(brandFor(product)) + '</small><h3><a class="product-title-link" href="' + url + '">' + escapeHtml(name) + "</a></h3></div>" +
       "</article>";
@@ -104,7 +104,7 @@
         if (typeof window.showToast === "function") window.showToast("Товар добавлен в корзину.");
         return;
       }
-      addToQuote(Number(id));
+      addToQuote(id);
     });
     updateCounts();
   }
