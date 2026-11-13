@@ -77,11 +77,15 @@
 
   function roots() {
     const map = categoryMap();
-    return categories.filter(category => !category.parent || !map.has(category.parent));
+    return categories.filter(category => !category.parent || !map.has(category.parent)).sort(compareCategories);
   }
 
   function childrenOf(id) {
-    return categories.filter(category => category.parent === id);
+    return categories.filter(category => category.parent === id).sort(compareCategories);
+  }
+
+  function compareCategories(a, b) {
+    return a.name.localeCompare(b.name, 'ru', {numeric:true, sensitivity:'base'});
   }
 
   function descendantsOf(id) {

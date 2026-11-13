@@ -11,6 +11,10 @@
 .catalog-tree-branch{border-bottom:1px solid #e6e9e7}
 .catalog-tree-branch>summary small{float:right;color:#6b7471}
 .catalog-tree-children{padding-left:12px}
+.catalog-filter-list .catalog-filter{justify-content:flex-start;text-align:left}
+.catalog-filter-list .catalog-filter>span{flex:1;text-align:left;white-space:normal;overflow-wrap:anywhere}
+.catalog-filter-list .catalog-filter>small{margin-left:auto}
+.catalog-filter-list summary,.catalog-dropdown summary,.catalog-dropdown a{text-align:left}
 .catalog-tree-branch[open]>summary{color:#b13d00;background:#fff6ef}
 .news-home{padding-top:70px;padding-bottom:70px}
 .news-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}

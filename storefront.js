@@ -15,6 +15,7 @@
     let loaded=false;
     function close(){menu.hidden=true;button.setAttribute('aria-expanded','false');}
     function renderMenu(categories) {
+        categories=categories.slice().sort((a,b)=>a.name.localeCompare(b.name,'ru',{numeric:true,sensitivity:'base'}));
         const map=new Map(categories.map(item=>[item.id,item]));
         function branch(item,trail=new Set()) {
           if(trail.has(item.id))return '';

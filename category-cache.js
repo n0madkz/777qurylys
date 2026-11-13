@@ -5,7 +5,7 @@
   const normalize = value => {
     if (!Array.isArray(value)) throw new Error('Invalid categories');
     return value.filter(item => item && typeof item.id === 'string' && typeof item.name === 'string' &&
-      item.id !== 'shop-other' && item.active !== false && !item.id.startsWith('onec-')).map(item => ({id:item.id,name:item.name,parent:String(item.parent || '')}));
+      item.id !== 'shop-other' && item.active !== false && !item.id.startsWith('onec-')).map(item => ({id:item.id,name:item.name,parent:String(item.parent || '')})).sort((a,b)=>a.name.localeCompare(b.name,'ru',{numeric:true,sensitivity:'base'}));
   };
   try {
     const saved = JSON.parse(localStorage.getItem(key) || 'null');
