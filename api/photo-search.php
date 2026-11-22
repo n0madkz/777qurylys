@@ -12,6 +12,7 @@ function photo_signature(string $url, int $expires): string {
     return hash_hmac('sha256', $expires . "\n" . $url, supabase_key());
 }
 function photo_search(string $query): array {
+    if (config_value('GOOGLE_SEARCH_API_KEY')!=='' && config_value('GOOGLE_SEARCH_ENGINE_ID')!=='') return google_photo_search($query);
     $key = config_value('BRAVE_SEARCH_API_KEY');
     if ($key === '') throw new ApiError('Поиск внутри админки пока не подключён. Можно открыть поиск в интернете ниже.', 503);
     $query = text_value($query, 350);
@@ -41,12 +42,40 @@ function photo_search(string $query): array {
     return ['results' => $results];
 }
 
+function google_photo_search(string $query): array {
+    $key=config_value('GOOGLE_SEARCH_API_KEY');$engine=config_value('GOOGLE_SEARCH_ENGINE_ID');
+    if ($key==='' || $engine==='') throw new ApiError('Не настроен действующий доступ Google Custom Search API.',503);
+    $url='https://customsearch.googleapis.com/customsearch/v1?'.http_build_query(['key'=>$key,'cx'=>$engine,'q'=>text_value($query,350),'searchType'=>'image','num'=>10,'safe'=>'active']);
+    if (!function_exists('curl_init')) throw new ApiError('Для поиска требуется PHP cURL.',503);
+    $curl=curl_init($url);
+    curl_setopt_array($curl,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>15]);
+    $body=curl_exec($curl);$status=curl_getinfo($curl,CURLINFO_RESPONSE_CODE);curl_close($curl);
+    if ($status===403) throw new ApiError('Google отказал в доступе. Custom Search JSON API закрыт для новых клиентов; проверьте действующий проект и разрешения.',503);
+    if ($status===429) throw new ApiError('Лимит Google Search API исчерпан. Автозагрузка остановлена.',429);
+    if ($status!==200 || !$body) throw new ApiError('Google Search API недоступен. Автозагрузка остановлена.',502);
+    $data=json_decode($body,true);$results=[];$expires=time()+900;
+    if (!is_array($data)) throw new ApiError('Некорректный ответ Google.',502);
+    foreach($data['items']??[] as $item){
+        $url=(string)($item['link']??'');$page=(string)($item['image']['contextLink']??'');$thumbnail=(string)($item['image']['thumbnailLink']??'');
+        if (!photo_public_url($url)||!photo_public_url($page)||!photo_public_url($thumbnail))continue;
+        $results[]=['url'=>$url,'page'=>$page,'thumbnail'=>$thumbnail,'title'=>text_value($item['title']??'',200),'source'=>(string)parse_url($page,PHP_URL_HOST),'expires'=>$expires,'signature'=>photo_signature($url,$expires)];
+    }
+    return ['results'=>$results];
+}
+
 function photo_download(array $body): never {
     $url = (string)($body['url'] ?? ''); $expires = (int)($body['expires'] ?? 0);
     if (!photo_public_url($url) || $expires < time() || $expires > time() + 900
         || !hash_equals(photo_signature($url, $expires), (string)($body['signature'] ?? ''))) {
         throw new ApiError('Результат устарел. Повторите поиск.', 400);
     }
+    $photo = photo_fetch_image($url);
+    header('Content-Type: ' . $photo['mime']); header('Cache-Control: no-store');
+    header('X-Content-Type-Options: nosniff'); echo $photo['bytes']; exit;
+}
+
+function photo_fetch_image(string $url): array {
+    if (!photo_public_url($url)) throw new ApiError('Некорректный адрес фото',422);
     if (!function_exists('curl_init')) throw new ApiError('На сервере требуется PHP cURL', 503);
     $host = (string)parse_url($url, PHP_URL_HOST);
     // Resolve first, reject private/reserved addresses, then pin cURL to that IP.
@@ -72,6 +101,5 @@ function photo_download(array $body): never {
     $info = @getimagesizefromstring($bytes);
     if (!$info || !in_array($info['mime'] ?? '', ['image/jpeg', 'image/png', 'image/webp'], true)
         || $info[0] * $info[1] > 40000000) throw new ApiError('Нужен JPG, PNG или WebP до 40 мегапикселей', 422);
-    header('Content-Type: ' . $info['mime']); header('Cache-Control: no-store');
-    header('X-Content-Type-Options: nosniff'); echo $bytes; exit;
+    return ['bytes'=>$bytes,'mime'=>$info['mime']];
 }

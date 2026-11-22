@@ -9,6 +9,7 @@ require_once __DIR__ . '/news.php';
 require_once __DIR__ . '/category-aliases.php';
 require_once __DIR__ . '/telegram.php';
 require_once __DIR__ . '/verified-photo.php';
+require_once __DIR__ . '/bulk-photos.php';
 
 function category_row(array $value): array {
     return [
@@ -550,6 +551,7 @@ try {
         if ($method === 'PUT') send_json(store_settings(request_json()));
         throw new ApiError('Method not allowed', 405);
     }
+    if ($route === 'admin/bulk-photos') { require_method('POST'); admin_required(); $body=request_json(); send_json(bulk_photo_step((int)($body['offset']??0))); }
     if ($route === 'admin/verified-photo') send_json(apply_verified_photo());
     if ($route === 'admin/telegram') { admin_required(); send_json(telegram_admin($method)); }
     if ($route === 'admin/requests') send_json(admin_requests($method));

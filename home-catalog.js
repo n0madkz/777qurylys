@@ -73,7 +73,7 @@
       badge +
       '<button class="product-card__add" data-add="' + escapeHtml(product.id) + '" aria-label="Добавить в корзину" title="Добавить в корзину"></button>' +
       "</div>" +
-      '<div class="product-info"><small>' + escapeHtml(brandFor(product)) + '</small><h3><a class="product-title-link" href="' + url + '">' + escapeHtml(name) + "</a></h3></div>" +
+      '<div class="product-info"><small>' + escapeHtml(brandFor(product)) + '</small><h3><a class="product-title-link" href="' + url + '">' + escapeHtml(name) + "</a></h3>" + (window.ProductStock?.markup(product)||'') + "</div>" +
       "</article>";
   }
 

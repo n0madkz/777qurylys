@@ -1,0 +1,10 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const context={Intl};vm.createContext(context);vm.runInContext(fs.readFileSync('product-stock.js','utf8'),context);
+const render=context.ProductStock.markup;
+assert.match(render({}),/Наличие уточняется/);
+assert.match(render({warehouseStocks:[{name:'Магазин склад',quantity:0}]}),/Нет в наличии/);
+assert.match(render({unit:'м',warehouseStocks:[{name:'Склад',quantity:12.5}]}),/12,5 м/);
+assert.doesNotMatch(render({warehouseStocks:[{name:'Магазин склад1',quantity:99}]}),/99/);
+assert.match(render({warehouseStocks:[{name:'<script>',quantity:1}]}),/&lt;script&gt;/);
+assert.match(render({warehouseStocks:[{name:'Склад',quantity:null}]}),/наличие уточняется/);
+console.log('Client stock: warehouse quantities, zero, unknown and escaping passed.');

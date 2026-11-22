@@ -169,7 +169,7 @@
       "</div>" +
       '<div class="product-info"><small>' + escapeHtml(brandFor(product)) +
       '</small><h3><a class="product-title-link" href="' + url + '">' + escapeHtml(name) +
-      "</a></h3></div></article>";
+      "</a></h3>" + (window.ProductStock?.markup(product)||'') + "</div></article>";
   }
 
   function visibleProducts() {
