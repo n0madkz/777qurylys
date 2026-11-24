@@ -15,4 +15,9 @@ check_photo(bulk_photo_name_matches('Dali краска резиновая кор
 check_photo(!bulk_photo_name_matches('Dali краска резиновая белый 3 кг','Dali','краска резиновая Dali коричневый 3кг'));
 check_photo(!bulk_photo_name_matches('Dali краска резиновая коричневый 12 кг','Dali','краска резиновая Dali коричневый 3кг'));
 check_photo(!bulk_photo_name_matches('Dali краска','Dali','краска Dali'));
-echo "Brand, model, full-name fallback, colour and pack-size checks passed.\n";
+check_photo(bulk_photo_name_matches('Дюбель-хомут 6–12 черный купить','','Дюбель хомут 6-12 черный'));
+check_photo(!bulk_photo_name_matches('Дюбель хомут 12-16 черный','','Дюбель хомут 6-12 черный'));
+check_photo(!bulk_photo_name_matches('Дюбель хомут 6-12 белый','','Дюбель хомут 6-12 черный'));
+check_photo(!bulk_photo_name_matches('Дюбель хомут черный','','Дюбель хомут 6-12 черный'));
+check_photo(!bulk_photo_name_matches('Краска 3л','','Краска 3л'));
+echo "Brand, model, brandless names, size ranges, colour and pack-size checks passed.\n";

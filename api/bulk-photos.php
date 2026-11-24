@@ -18,7 +18,7 @@ function bulk_photo_matches(string $title,string $brand,string $model): bool {
 
 function bulk_photo_name_words(string $text): array {
     $text=mb_strtolower(str_replace('ё','е',$text),'UTF-8');
-    $text=preg_replace('/\s*[-–]\s*/u','',$text);
+    $text=preg_replace('/\s*[-–]\s*/u',' ',$text);
     preg_match_all('/[\pL][\pL\pN]*/u',$text,$matches);
     return array_values(array_unique(array_filter($matches[0],fn($word)=>mb_strlen($word,'UTF-8')>=3)));
 }
@@ -32,7 +32,7 @@ function bulk_photo_measures(string $text): array {
 
 function bulk_photo_name_matches(string $title,string $brand,string $name): bool {
     $compact=fn($value)=>mb_strtolower(preg_replace('/[^\pL\pN]/u','',$value),'UTF-8');
-    if(!str_contains($compact($title),$compact($brand)))return false;
+    if($brand!=='' && !str_contains($compact($title),$compact($brand)))return false;
     $brandWords=bulk_photo_name_words($brand);
     $words=array_values(array_diff(bulk_photo_name_words($name),$brandWords));
     // A short generic name such as "Краска Dali" cannot identify the product.
@@ -40,6 +40,9 @@ function bulk_photo_name_matches(string $title,string $brand,string $name): bool
     $titleWords=bulk_photo_name_words($title);
     foreach($words as $word)if(!in_array($word,$titleWords,true))return false;
     foreach(bulk_photo_measures($name) as $measure)if(!in_array($measure,bulk_photo_measures($title),true))return false;
+    // Range and size numbers (6-12, 3.5x30) are significant even without units.
+    $numbers=function($text){preg_match_all('/\d+(?:[.,]\d+)?/u',$text,$matches);return array_map(fn($value)=>(string)(float)str_replace(',','.',$value),$matches[0]);};
+    if(array_diff($numbers($name),$numbers($title)))return false;
     return true;
 }
 
@@ -52,15 +55,15 @@ function bulk_photo_step(int $offset): array {
     if (product_brand_is_empty($brand)) $brand=product_brand_from_name((string)$row['name']);
     $result=['done'=>false,'next'=>$offset+1,'name'=>$row['name'],'status'=>'skipped'];
     if (!empty($row['image_path'])) { $result['reason']='Фото уже есть';return $result; }
-    if ($brand==='') { $result['reason']='В названии не распознан бренд';return $result; }
     $model=bulk_photo_model($row);
+    if ($brand==='' && !bulk_photo_name_matches((string)$row['name'],'',(string)$row['name'])) { $result['reason']='Слишком общее название: недостаточно характеристик для выбора фото';return $result; }
     $identity=$model!==''?$model:'name:'.hash('sha256',(string)$row['name']);
     $metadata=json_value($row['metadata']??[]);
     if (($metadata['auto_photo_check']['identity']??$metadata['auto_photo_check']['model']??'')===$identity && strtotime($metadata['auto_photo_check']['at']??'1970-01-01')>time()-7*86400) { $result['reason']='Уже проверен за последние 7 дней';return $result; }
     $found=photo_search($brand.' '.$model.' '.$row['name']);
     $picked=null;
     foreach($found['results'] as $item) {
-        $matches=$model!==''?bulk_photo_matches($item['title'],$brand,$model):bulk_photo_name_matches($item['title'],$brand,(string)$row['name']);
+        $matches=$model!=='' && $brand!==''?bulk_photo_matches($item['title'],$brand,$model):bulk_photo_name_matches($item['title'],$brand,(string)$row['name']);
         if (!$matches) continue;
         if ($model!=='' && preg_match('/краск|эмал|грунт|затирк/iu',(string)$row['name']) && !bulk_photo_name_matches($item['title'],$brand,(string)$row['name'])) continue;
         // Never substitute another pack size, even when the model is identical.
@@ -78,7 +81,7 @@ function bulk_photo_step(int $offset): array {
         $extension=['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp'][$image['mime']];
         $path='auto/'.hash('sha256',(string)$row['id'].'|'.$picked['url']).'.'.$extension;
         storage_upload('product-images',$path,$image['bytes'],$image['mime']);
-        $metadata['photo_source']=['page'=>$picked['page'],'image'=>$picked['url'],'brand'=>$brand,'model'=>$model,'verified_at'=>gmdate('c'),'method'=>$model!==''?'brand-model-match':'brand-full-name-match'];
+        $metadata['photo_source']=['page'=>$picked['page'],'image'=>$picked['url'],'brand'=>$brand,'model'=>$model,'verified_at'=>gmdate('c'),'method'=>$brand===''?'full-name-specification-match':($model!==''?'brand-model-match':'brand-full-name-match')];
         unset($metadata['thumbnail']);
         $patch=['image_path'=>$path,'image_alt'=>$row['name'],'metadata'=>json_object_value($metadata)];
         $result['status']='saved';$result['reason']='Фото загружено';
