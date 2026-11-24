@@ -18,6 +18,6 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
   assert.equal(calls.length,3);
   assert.deepEqual(calls[0],calls[1],'Network failure must retry same brand offset');
   assert.ok(calls[2].url.endsWith('bulk-photos'),'Brand scan must precede photo search');
-  assert.ok(nodes.some(n=>n.textContent.includes('проверено 3954')),'Show full-catalog count');
+  assert.ok(nodes.some(n=>n.textContent.includes('проверено товаров 3954')),'Show full-catalog count');
   console.log('PASS: network retry resumes same offset, full brand scan precedes photos.');
 })().catch(error=>{console.error(error);process.exitCode=1});

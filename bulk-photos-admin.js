@@ -7,7 +7,7 @@
   box.append(title,info,status);panel.append(box);
   const key='777-bulk-photos-offset-v2';
   let offset=Number(sessionStorage.getItem(key))||0, failures=0;
-  let brandOffset=0, brandUpdated=0, brandUnknown=0, brandSummary='';
+  let brandOffset=0, brandUpdated=0, brandUnknown=0, brandSummary='', photosSaved=0, photosSkipped=0;
   const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   async function request(route,body){
     while(true){
@@ -32,19 +32,20 @@
   async function run(){
     try{
       while(true){
-        status.textContent='Проверяем бренды всех товаров. Проверено: '+brandOffset+'. Заполнено: '+brandUpdated;
+        status.textContent='Этап 1 из 2 — бренды. Проверено товаров: '+brandOffset+'. Заполнено полей бренда: '+brandUpdated+'. Фотографии пока не загружаются.';
         const data=await request('fill-brands',{offset:brandOffset});
         brandOffset=data.next;brandUpdated+=data.updated;brandUnknown+=data.unknown;
         if(data.done)break;
         await pause(300);
       }
-      brandSummary='Бренды: проверено '+brandOffset+', заполнено '+brandUpdated+', не распознано '+brandUnknown+'. ';
+      brandSummary='Бренды: проверено товаров '+brandOffset+', заполнено полей бренда '+brandUpdated+', не распознано '+brandUnknown+'. ';
       document.dispatchEvent(new CustomEvent('product-brands-updated'));
       while(true){
         const data=await request('bulk-photos',{offset});
-        if(data.done){sessionStorage.removeItem(key);status.textContent=brandSummary+'Проверка фотографий завершена. Обновите таблицу товаров.';return;}
+        if(data.done){sessionStorage.removeItem(key);status.textContent=brandSummary+'Фотографии: загружено за этот запуск '+photosSaved+', пропущено '+photosSkipped+'. Проверка завершена. Обновите таблицу товаров.';return;}
         offset=data.next;sessionStorage.setItem(key,String(offset));
-        status.textContent=brandSummary+'Фото: проверено '+offset+'. '+data.name+' — '+data.reason;
+        if(data.status==='saved')photosSaved++;else photosSkipped++;
+        status.textContent='Этап 2 из 2 — фотографии. Проверено товаров: '+offset+'. Загружено фото за этот запуск: '+photosSaved+'. Пропущено: '+photosSkipped+'. '+data.name+' — '+data.reason;
         await pause(data.status==='saved'?1500:700);
       }
     }catch(error){status.textContent=brandSummary+error.message;status.className='form-status is-error';}
