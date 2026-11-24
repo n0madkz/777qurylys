@@ -3,9 +3,9 @@
   const box=document.createElement('section');box.className='admin-form';
   const title=document.createElement('h3');title.textContent='Бренды и автозагрузка фотографий';
   const status=document.createElement('p');status.setAttribute('role','status');
-  const info=document.createElement('p');info.textContent='Сначала заполняются пустые бренды по названиям во всём каталоге. Затем подбираются фото по бренду и модели. Ваши фото и заполненные бренды сохраняются. Оставьте админку открытой.';
+  const info=document.createElement('p');info.textContent='Сначала заполняются бренды. Затем фото подбираются по бренду и модели, а без артикула — по полному названию, характеристикам и фасовке. Ваши фото сохраняются. Оставьте админку открытой.';
   box.append(title,info,status);panel.append(box);
-  const key='777-bulk-photos-offset-v2';
+  const key='777-bulk-photos-offset-v3';
   let offset=Number(sessionStorage.getItem(key))||0, failures=0;
   let brandOffset=0, brandUpdated=0, brandUnknown=0, brandSummary='', photosSaved=0, photosSkipped=0;
   const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
