@@ -17,7 +17,7 @@ function bulk_photo_matches(string $title,string $brand,string $model): bool {
 }
 
 function bulk_photo_step(int $offset): array {
-    if (config_value('GOOGLE_SEARCH_API_KEY')==='' || config_value('GOOGLE_SEARCH_ENGINE_ID')==='') throw new ApiError('Автозагрузка фото ждёт GOOGLE_SEARCH_API_KEY и GOOGLE_SEARCH_ENGINE_ID в .777qurylys.env. Существующие фото сохранены.',503);
+    if (config_value('BRAVE_SEARCH_API_KEY')==='' && (config_value('GOOGLE_SEARCH_API_KEY')==='' || config_value('GOOGLE_SEARCH_ENGINE_ID')==='')) throw new ApiError('Добавьте BRAVE_SEARCH_API_KEY в приватный файл .777qurylys.env на сервере. Существующие фото сохранены.',503);
     $offset=max(0,$offset);
     $rows=supabase_json('GET',rest_path('products','?select=*&order=id.asc&limit=1&offset='.$offset));
     if (!$rows) return ['done'=>true,'next'=>$offset,'message'=>'Проверка каталога завершена'];
@@ -29,7 +29,7 @@ function bulk_photo_step(int $offset): array {
     if ($model==='') { $result['reason']='Нужен точный артикул производителя';return $result; }
     $metadata=json_value($row['metadata']??[]);
     if (($metadata['auto_photo_check']['model']??'')===$model && strtotime($metadata['auto_photo_check']['at']??'1970-01-01')>time()-7*86400) { $result['reason']='Уже проверен за последние 7 дней';return $result; }
-    $found=google_photo_search($brand.' '.$model.' '.$row['name']);
+    $found=photo_search($brand.' '.$model.' '.$row['name']);
     $picked=null;
     foreach($found['results'] as $item) {
         if (!bulk_photo_matches($item['title'],$brand,$model)) continue;

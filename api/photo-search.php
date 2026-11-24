@@ -12,7 +12,7 @@ function photo_signature(string $url, int $expires): string {
     return hash_hmac('sha256', $expires . "\n" . $url, supabase_key());
 }
 function photo_search(string $query): array {
-    if (config_value('GOOGLE_SEARCH_API_KEY')!=='' && config_value('GOOGLE_SEARCH_ENGINE_ID')!=='') return google_photo_search($query);
+    if (config_value('BRAVE_SEARCH_API_KEY')==='' && config_value('GOOGLE_SEARCH_API_KEY')!=='' && config_value('GOOGLE_SEARCH_ENGINE_ID')!=='') return google_photo_search($query);
     $key = config_value('BRAVE_SEARCH_API_KEY');
     if ($key === '') throw new ApiError('Поиск внутри админки пока не подключён. Можно открыть поиск в интернете ниже.', 503);
     $query = text_value($query, 350);
@@ -20,10 +20,18 @@ function photo_search(string $query): array {
     if (count(preg_split('/\s+/u', $query) ?: []) > 50) throw new ApiError('Сократите запрос до 50 слов', 400);
     $context = stream_context_create(['http' => ['method' => 'GET', 'timeout' => 15, 'ignore_errors' => true,
         'header' => "Accept: application/json\r\nX-Subscription-Token: " . $key]]);
-    $body = @file_get_contents('https://api.search.brave.com/res/v1/images/search?' . http_build_query([
+    $url = 'https://api.search.brave.com/res/v1/images/search?' . http_build_query([
         'q' => $query, 'count' => 12, 'safesearch' => 'strict', 'search_lang' => 'ru', 'spellcheck' => 'false'
-    ]), false, $context);
-    $status = response_status($http_response_header ?? []);
+    ]);
+    if (function_exists('curl_init')) {
+        $curl=curl_init($url);
+        curl_setopt_array($curl,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>15,CURLOPT_HTTPHEADER=>['Accept: application/json','X-Subscription-Token: '.$key]]);
+        $body=curl_exec($curl);$status=curl_getinfo($curl,CURLINFO_RESPONSE_CODE);curl_close($curl);
+    } else {
+        $body=@file_get_contents($url,false,$context);
+        $status=response_status($http_response_header ?? []);
+    }
+    if (in_array($status,[401,403,422],true)) throw new ApiError('Brave не принял ключ или Images Search недоступен в вашем тарифе. Проверьте BRAVE_SEARCH_API_KEY на сервере.',503);
     if ($status === 429) throw new ApiError('Достигнут лимит поиска. Попробуйте позже.', 429);
     if ($status !== 200 || $body === false) throw new ApiError('Сервис поиска недоступен. Проверьте подключение и тариф API.', 502);
     $data = json_decode($body, true);

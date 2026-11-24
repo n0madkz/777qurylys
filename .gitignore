@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+.777qurylys.env
 
 # Cloudflare local state
 .wrangler/
