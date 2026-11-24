@@ -22,9 +22,10 @@ function bulk_photo_step(int $offset): array {
     $rows=supabase_json('GET',rest_path('products','?select=*&order=id.asc&limit=1&offset='.$offset));
     if (!$rows) return ['done'=>true,'next'=>$offset,'message'=>'Проверка каталога завершена'];
     $row=$rows[0];$brand=trim((string)($row['brand']??''));
+    if (product_brand_is_empty($brand)) $brand=product_brand_from_name((string)$row['name']);
     $result=['done'=>false,'next'=>$offset+1,'name'=>$row['name'],'status'=>'skipped'];
     if (!empty($row['image_path'])) { $result['reason']='Фото уже есть';return $result; }
-    if ($brand==='' || $brand==='-') { $result['reason']='Не указан бренд';return $result; }
+    if ($brand==='') { $result['reason']='В названии не распознан бренд';return $result; }
     $model=bulk_photo_model($row);
     if ($model==='') { $result['reason']='Нужен точный артикул производителя';return $result; }
     $metadata=json_value($row['metadata']??[]);

@@ -551,6 +551,7 @@ try {
         if ($method === 'PUT') send_json(store_settings(request_json()));
         throw new ApiError('Method not allowed', 405);
     }
+    if ($route === 'admin/fill-brands') { require_method('POST'); admin_required(); $body=request_json(); send_json(product_fill_brands((int)($body['offset']??0))); }
     if ($route === 'admin/bulk-photos') { require_method('POST'); admin_required(); $body=request_json(); send_json(bulk_photo_step((int)($body['offset']??0))); }
     if ($route === 'admin/verified-photo') send_json(apply_verified_photo());
     if ($route === 'admin/telegram') { admin_required(); send_json(telegram_admin($method)); }

@@ -1,6 +1,14 @@
 <?php
 require __DIR__ . '/../api/product-brands.php';
 $cases = [
+    'ключ трубный тип L 90Градус Ремоколор'=>'Ремоколор',
+    'Кисть RemoColor professional'=>'Ремоколор',
+    'Эмаль ПФ-115 STATUS желтая 0,8кг'=>'STATUS',
+    'Эмаль ПФ-115 "Ultra lines" синяя 1,8кг'=>'Ultra Lines',
+    'Розетка NIZMO, TEKLED ELECTRIC'=>'TEKLED',
+    'BRITE Выключатель 10А ИЭК'=>'ИЭК',
+    'Tintaly Концентрат Alina Paint'=>'Alina Paint',
+    'Набор без бренда SDS CrV'=>'',
     'Ceresit ce 33 comfort Антрацит 2кг' => 'Ceresit',
     'Сeresit CE 33 Comfort Жасмин 2кг' => 'Ceresit',
     'Хомут нейлоновый 100шт EKF' => 'EKF',

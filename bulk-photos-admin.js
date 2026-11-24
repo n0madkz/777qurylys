@@ -1,21 +1,53 @@
 (() => {
   const panel=document.querySelector('[data-panel="products"]');if(!panel)return;
   const box=document.createElement('section');box.className='admin-form';
-  const title=document.createElement('h3');title.textContent='Автозагрузка фотографий';
+  const title=document.createElement('h3');title.textContent='Бренды и автозагрузка фотографий';
   const status=document.createElement('p');status.setAttribute('role','status');
-  const info=document.createElement('p');info.textContent='Бренд и модель должны совпасть. Уже добавленные фото сохраняются. Загрузка идёт автоматически, пока открыта админка.';
+  const info=document.createElement('p');info.textContent='Сначала заполняются пустые бренды по названиям во всём каталоге. Затем подбираются фото по бренду и модели. Ваши фото и заполненные бренды сохраняются. Оставьте админку открытой.';
   box.append(title,info,status);panel.append(box);
-  const key='777-bulk-photos-offset';
-  let offset=Number(sessionStorage.getItem(key))||0;
-  async function step(){
-    try{
-      const response=await fetch('/api/admin/bulk-photos',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({offset})});
-      const data=await response.json();if(!response.ok)throw Error(data.error||'Ошибка автозагрузки');
-      if(data.done){sessionStorage.removeItem(key);status.textContent='Проверка всех товаров завершена. Обновите таблицу, чтобы увидеть фото.';return;}
-      offset=data.next;sessionStorage.setItem(key,String(offset));status.textContent='Проверено: '+offset+'. '+data.name+' — '+data.reason;
-      setTimeout(step,data.status==='saved'?1500:700);
-    }catch(error){status.textContent=error.message;status.className='form-status is-error';}
+  const key='777-bulk-photos-offset-v2';
+  let offset=Number(sessionStorage.getItem(key))||0, failures=0;
+  let brandOffset=0, brandUpdated=0, brandUnknown=0, brandSummary='';
+  const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  async function request(route,body){
+    while(true){
+      const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),60000);
+      try{
+        const response=await fetch('/api/admin/'+route,{method:'POST',credentials:'same-origin',signal:controller.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        const data=await response.json().catch(()=>null);
+        if(!response.ok){
+          if([429,500,502,504].includes(response.status))throw new TypeError(data?.error||'Сервер временно недоступен');
+          throw Error(data?.error||(response.status===401?'Войдите в админку заново.':'Ошибка обработки'));
+        }
+        if(!data)throw new TypeError('Сервер вернул неполный ответ');
+        failures=0;status.className='';return data;
+      }catch(error){
+        if(!(error instanceof TypeError)&&error.name!=='AbortError')throw error;
+        failures++;const delay=Math.min(60000,5000*2**Math.min(failures-1,4));
+        status.textContent='Соединение прервалось. Продолжим с той же позиции через '+delay/1000+' сек. Обработку начинать заново не нужно.';
+        status.className='form-status is-error';await pause(delay);
+      }finally{clearTimeout(timer);}
+    }
   }
-  // Wait for the existing authenticated admin session, without a second installation action.
-  fetch('/api/admin/session',{credentials:'same-origin'}).then(response=>{if(response.ok)step();});
+  async function run(){
+    try{
+      while(true){
+        status.textContent='Проверяем бренды всех товаров. Проверено: '+brandOffset+'. Заполнено: '+brandUpdated;
+        const data=await request('fill-brands',{offset:brandOffset});
+        brandOffset=data.next;brandUpdated+=data.updated;brandUnknown+=data.unknown;
+        if(data.done)break;
+        await pause(300);
+      }
+      brandSummary='Бренды: проверено '+brandOffset+', заполнено '+brandUpdated+', не распознано '+brandUnknown+'. ';
+      document.dispatchEvent(new CustomEvent('product-brands-updated'));
+      while(true){
+        const data=await request('bulk-photos',{offset});
+        if(data.done){sessionStorage.removeItem(key);status.textContent=brandSummary+'Проверка фотографий завершена. Обновите таблицу товаров.';return;}
+        offset=data.next;sessionStorage.setItem(key,String(offset));
+        status.textContent=brandSummary+'Фото: проверено '+offset+'. '+data.name+' — '+data.reason;
+        await pause(data.status==='saved'?1500:700);
+      }
+    }catch(error){status.textContent=brandSummary+error.message;status.className='form-status is-error';}
+  }
+  fetch('/api/admin/session',{credentials:'same-origin'}).then(response=>{if(response.ok)run();}).catch(()=>{status.textContent='Не удалось проверить вход. Обновите страницу после восстановления соединения.';});
 })();
